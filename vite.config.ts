@@ -50,8 +50,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: `@use "${scssHelpers}" as *;\n`,
-        loadPaths: [path.resolve(rootDir, "src")],
-        api: "modern-compiler"
+        loadPaths: [path.resolve(rootDir, "src")]
       }
     },
     devSourcemap: true
