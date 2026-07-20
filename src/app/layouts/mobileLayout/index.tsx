@@ -3,6 +3,7 @@ import { Outlet, useRouterState } from "@tanstack/react-router";
 import cn from "classnames";
 
 import { useData } from "@/app/providers/useData";
+import { ErrorBoundary } from "@/app/providers/errorBoundary";
 import { pageTransition, pageVariants, springSoft } from "@/shared/lib/motion/presets";
 import { formatMoney } from "@/shared/lib/formatMoney";
 import { BottomNav } from "@/shared/ui/bottomNav";
@@ -51,7 +52,9 @@ export const MobileLayout = () => {
             transition={pageTransition}
             variants={pageVariants}
           >
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
       </main>
