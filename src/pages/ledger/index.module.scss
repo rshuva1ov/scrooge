@@ -1,0 +1,98 @@
+.page {
+  @include flex(stretch, flex-start, var(--section-gap), column);
+  padding: var(--page-padding);
+}
+
+.fab {
+  position: fixed;
+  right: var(--page-padding);
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 0.75rem);
+  z-index: 15;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: var(--shadow-md);
+  color: #1a1408;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.list {
+  @include flex(stretch, flex-start, 0, column);
+}
+
+.item {
+  @include flex(center, space-between, 0.75rem);
+  padding: 0.75rem 0;
+  border-bottom: 0.0625rem solid var(--border-subtle);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.itemLeft {
+  @include flex(center, flex-start, 0.75rem);
+  min-width: 0;
+}
+
+.icon {
+  @include flex(center, center);
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: var(--radius-md);
+  background: var(--gold-soft);
+  font-size: 1.0625rem;
+}
+
+.meta {
+  @include flex(flex-start, flex-start, 0.125rem, column);
+  min-width: 0;
+}
+
+.name {
+  @include font(0.9375rem, 600, 1.25rem, var(--text-primary));
+}
+
+.note {
+  @include font(0.8125rem, 400, 1.125rem, var(--text-secondary));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date {
+  @include font(0.75rem, 400, 1rem, var(--text-tertiary));
+}
+
+.itemRight {
+  @include flex(flex-end, flex-end, 0.25rem, column);
+  flex-shrink: 0;
+}
+
+.form {
+  @include flex(stretch, flex-start, 0.75rem, column);
+}
+
+.typeToggle {
+  @include flex(stretch, flex-start, 0.5rem);
+}
+
+.typeButton {
+  flex: 1;
+}
+
+.typeButtonActive {
+  box-shadow: inset 0 0 0 0.125rem var(--border-accent);
+}

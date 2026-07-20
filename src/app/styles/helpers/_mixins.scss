@@ -1,0 +1,34 @@
+@mixin flex($align-items: flex-start, $justify-content: flex-start, $gap: 0, $direction: row, $wrap: nowrap) {
+  display: flex;
+  align-items: $align-items;
+  justify-content: $justify-content;
+  flex-direction: $direction;
+  gap: $gap;
+  flex-wrap: $wrap;
+}
+
+@mixin font($size, $weight: 400, $line-height: initial, $color: inherit) {
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $line-height;
+  color: $color;
+}
+
+@mixin hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+$sm: 22.5rem;
+
+@mixin respond-from($media) {
+  @if $media == small {
+    @media only screen and (max-width: $sm) {
+      @content;
+    }
+  }
+}

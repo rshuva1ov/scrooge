@@ -1,0 +1,41 @@
+.field {
+  @include flex(flex-start, flex-start, 0.375rem, column);
+  width: 100%;
+}
+
+.label {
+  @include font(0.8125rem, 500, 1.125rem, var(--text-secondary));
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:focus {
+    border-color: var(--border-accent);
+    box-shadow: 0 0 0 0.1875rem var(--gold-soft);
+  }
+}
+
+.textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.error {
+  @include font(0.75rem, 400, 1rem, var(--expense));
+}

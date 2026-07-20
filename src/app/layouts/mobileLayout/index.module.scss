@@ -1,0 +1,62 @@
+.layout {
+  @include flex(stretch, flex-start, 0, column);
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom));
+}
+
+.header {
+  @include flex(center, flex-start, 0.75rem);
+  flex-shrink: 0;
+  padding: 0.875rem var(--page-padding);
+  background: rgb(26 38 32 / 0.92);
+  border-bottom: 0.0625rem solid var(--border-default);
+  backdrop-filter: blur(0.75rem);
+}
+
+.headerMain {
+  @include flex(flex-start, center, 0.125rem, column);
+  flex: 1;
+  min-width: 0;
+}
+
+.titleRow {
+  @include flex(center, flex-start, 0.5rem);
+}
+
+.title {
+  @include font(0.8125rem, 600, 1.125rem, var(--text-secondary));
+  letter-spacing: 0.04em;
+}
+
+.balance {
+  @include font(1.75rem, 700, 2rem, var(--gold));
+  font-variant-numeric: tabular-nums;
+}
+
+.balanceDebt {
+  color: var(--debt);
+}
+
+.debtHint {
+  @include font(0.75rem, 500, 1rem, var(--debt));
+  margin-top: 0.125rem;
+}
+
+.duckWrap {
+  flex-shrink: 0;
+}
+
+.content {
+  @include flex(stretch, flex-start, 0, column);
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  @include hide-scrollbar;
+}

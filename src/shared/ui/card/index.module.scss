@@ -1,0 +1,47 @@
+.card {
+  @include flex(stretch, flex-start, 0, column);
+  background: var(--bg-elevated);
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.default {
+  background: var(--bg-elevated);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.gap_8 {
+  gap: 0.5rem;
+}
+
+.gap_12 {
+  gap: 0.75rem;
+}
+
+.gap_16 {
+  gap: 1rem;
+}
+
+.padding_12 {
+  padding: 0.75rem;
+}
+
+.padding_16 {
+  padding: 1rem;
+}
+
+.padding_20 {
+  padding: 1.25rem;
+}
+
+.border_12 {
+  border-radius: 0.75rem;
+}
+
+.border_16 {
+  border-radius: 1rem;
+}
