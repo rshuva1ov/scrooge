@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { ChevronDown } from "lucide-react";
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 import styles from "./index.module.scss";
@@ -33,9 +34,12 @@ export const Select = ({ label, error, className, id, children, ...props }: ISel
   return (
     <label className={cn(styles.field, className)} htmlFor={selectId}>
       {label && <span className={styles.label}>{label}</span>}
-      <select className={styles.select} id={selectId} {...props}>
-        {children}
-      </select>
+      <div className={styles.selectWrap}>
+        <select className={styles.select} id={selectId} {...props}>
+          {children}
+        </select>
+        <ChevronDown aria-hidden className={styles.selectIcon} size={18} strokeWidth={2} />
+      </div>
       {error && <span className={styles.error}>{error}</span>}
     </label>
   );

@@ -183,6 +183,71 @@ export const groupByDay = (transactions: TTransaction[], days = 30): IDailyData 
   };
 };
 
+export const groupByDayInMonth = (transactions: TTransaction[], monthKey: string): IDailyData => {
+  const monthStart = dayjs(`${monthKey}-01`);
+  const today = dayjs();
+  const monthEnd = monthStart.isSame(today, "month") ? today : monthStart.endOf("month");
+  const buckets = new Map<string, { income: number; expense: number }>();
+
+  for (let cursor = monthStart; cursor.isSameOrBefore(monthEnd, "day"); cursor = cursor.add(1, "day")) {
+    buckets.set(cursor.format("YYYY-MM-DD"), { income: 0, expense: 0 });
+  }
+
+  for (const transaction of transactions) {
+    const key = transaction.date.slice(0, 10);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+
+    if (transaction.type === "income") {
+      bucket.income += transaction.amount;
+    } else {
+      bucket.expense += transaction.amount;
+    }
+  }
+
+  const labels = Array.from(buckets.keys()).sort();
+
+  return {
+    labels,
+    income: labels.map((key) => buckets.get(key)?.income ?? 0),
+    expense: labels.map((key) => buckets.get(key)?.expense ?? 0)
+  };
+};
+
+export const groupByMonthWindow = (
+  transactions: TTransaction[],
+  endMonthKey: string,
+  count: number
+): IMonthlyData => {
+  const end = dayjs(`${endMonthKey}-01`);
+  const labels = Array.from({ length: count }, (_, index) =>
+    end.subtract(count - 1 - index, "month").format("YYYY-MM")
+  );
+  const buckets = new Map(labels.map((label) => [label, { income: 0, expense: 0 }]));
+
+  for (const transaction of transactions) {
+    const key = transaction.date.slice(0, 7);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+
+    if (transaction.type === "income") {
+      bucket.income += transaction.amount;
+    } else {
+      bucket.expense += transaction.amount;
+    }
+  }
+
+  return {
+    labels,
+    income: labels.map((key) => buckets.get(key)?.income ?? 0),
+    expense: labels.map((key) => buckets.get(key)?.expense ?? 0),
+    net: labels.map((key) => {
+      const bucket = buckets.get(key);
+      return (bucket?.income ?? 0) - (bucket?.expense ?? 0);
+    })
+  };
+};
+
 export const getTopExpenses = (transactions: TTransaction[], limit = 5): TTransaction[] => {
   return transactions
     .filter((transaction) => transaction.type === "expense")
@@ -190,4 +255,4 @@ export const getTopExpenses = (transactions: TTransaction[], limit = 5): TTransa
     .slice(0, limit);
 };
 
-export const FILTERS_STORAGE_KEY = "skrudge-report-filters";
+export const FILTERS_STORAGE_KEY = "scrooge-report-filters";

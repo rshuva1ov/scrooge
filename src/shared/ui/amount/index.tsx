@@ -37,8 +37,15 @@ export const Amount = ({
 
   let prefix = "";
   if (signed) {
-    if (value > 0) prefix = "+";
-    if (value < 0) prefix = "−";
+    if (type === "income") {
+      prefix = "+";
+    } else if (type === "expense") {
+      prefix = "−";
+    } else if (value > 0) {
+      prefix = "+";
+    } else if (value < 0) {
+      prefix = "−";
+    }
   } else if (allowNegative && value < 0) {
     prefix = "−";
   }

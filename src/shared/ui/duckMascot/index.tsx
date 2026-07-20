@@ -14,7 +14,7 @@ const HAT_BAND = "#c41e3a";
 const SHIRT = "#114b5f";
 const COIN = "#ffd700";
 
-export const DuckMascot = ({ pose = "rich", size = 80, className, alt = "Skrudge duck" }: IDuckMascotProps) => (
+export const DuckMascot = ({ pose = "rich", size = 80, className, alt = "Scrooge duck" }: IDuckMascotProps) => (
   <svg
     aria-hidden={alt ? undefined : true}
     className={className}

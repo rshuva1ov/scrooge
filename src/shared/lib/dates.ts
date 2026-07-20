@@ -17,6 +17,39 @@ export const formatDisplayDate = (date: string | Date): string => dayjs(date).fo
 
 export const formatShortDate = (date: string | Date): string => dayjs(date).format("D MMM");
 
+export const formatMonthLabel = (date: string | Date): string => {
+  const label = dayjs(date).format("MMMM YYYY");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+export const getMonthKey = (date: string | Date): string => dayjs(date).format("YYYY-MM");
+
+export const getMonthRange = (monthKey: string): { from: string; to: string } => {
+  const month = dayjs(`${monthKey}-01`);
+  const today = dayjs();
+  const to = month.isSame(today, "month")
+    ? today.format("YYYY-MM-DD")
+    : month.endOf("month").format("YYYY-MM-DD");
+
+  return {
+    from: month.startOf("month").format("YYYY-MM-DD"),
+    to
+  };
+};
+
+export const shiftMonthKey = (monthKey: string, delta: number): string =>
+  dayjs(`${monthKey}-01`).add(delta, "month").format("YYYY-MM");
+
+export const formatMonthNavLabel = (monthKey: string): string => formatMonthLabel(`${monthKey}-01`);
+
+export const getChartMonthKey = (filters: { from: string | null; to: string | null }): string => {
+  if (filters.from) {
+    return getMonthKey(filters.from);
+  }
+
+  return getMonthKey(new Date());
+};
+
 export type TPeriodPreset = "today" | "week" | "month" | "year" | "all";
 
 export const getPeriodRange = (preset: TPeriodPreset): { from: string | null; to: string | null } => {

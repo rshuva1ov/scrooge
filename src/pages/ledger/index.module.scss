@@ -4,6 +4,7 @@
 }
 
 .fab {
+  @include flex(center, center);
   position: fixed;
   right: var(--page-padding);
   bottom: calc(var(--nav-height) + var(--safe-bottom) + 0.75rem);
@@ -21,6 +22,25 @@
   &:active {
     transform: scale(0.96);
   }
+}
+
+.groups {
+  @include flex(stretch, flex-start, 0, column);
+}
+
+.monthSection {
+  &:not(:first-child) {
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 0.0625rem solid var(--border-subtle);
+  }
+}
+
+.monthTitle {
+  @include font(0.8125rem, 600, 1.125rem, var(--text-secondary));
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
 }
 
 .list {

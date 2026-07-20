@@ -3,7 +3,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { TCategory } from "@/entities/category/model/types";
 import type { TTransaction } from "@/entities/transaction/model/types";
 
-const DB_NAME = "skrudge-vault";
+const DB_NAME = "scrooge-vault";
 const DB_VERSION = 1;
 
 export interface ISetting {
@@ -11,7 +11,7 @@ export interface ISetting {
   value: string;
 }
 
-interface ISkrudgeDB extends DBSchema {
+interface IScroogeDB extends DBSchema {
   categories: {
     key: string;
     value: TCategory;
@@ -32,11 +32,11 @@ interface ISkrudgeDB extends DBSchema {
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<ISkrudgeDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<IScroogeDB>> | null = null;
 
-export const getDb = (): Promise<IDBPDatabase<ISkrudgeDB>> => {
+export const getDb = (): Promise<IDBPDatabase<IScroogeDB>> => {
   if (!dbPromise) {
-    dbPromise = openDB<ISkrudgeDB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<IScroogeDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains("categories")) {
           const store = db.createObjectStore("categories", { keyPath: "id" });

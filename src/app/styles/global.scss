@@ -20,8 +20,8 @@ body {
 body {
   background: var(--bg-base);
   background-image:
-    radial-gradient(circle at 50% -20%, rgb(230 192 74 / 0.07), transparent 42%),
-    linear-gradient(180deg, #141f1b 0%, var(--bg-base) 100%);
+    radial-gradient(circle at 50% -20%, var(--accent-glow), transparent 42%),
+    linear-gradient(180deg, var(--gradient-top) 0%, var(--bg-base) 100%);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   font-size: 1rem;
   font-weight: 400;

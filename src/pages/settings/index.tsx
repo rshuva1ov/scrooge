@@ -1,19 +1,25 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useRef, type ChangeEvent } from "react";
 
+import cn from "classnames";
 import { Download, Trash2, Upload } from "lucide-react";
 
+import { useToast } from "@/app/providers/toastProvider";
 import { useData } from "@/app/providers/useData";
+import { useTheme } from "@/app/providers/useTheme";
 import { seedCategoriesIfEmpty } from "@/entities/category/api/categoryRepo";
 import { clearDatabase, exportDatabase, importDatabase, type IBackupPayload } from "@/shared/db";
+import { isThemePresetId, THEME_PRESETS } from "@/shared/lib/theme/presets";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { ScroogeArt } from "@/shared/ui/scroogeArt";
 
 import styles from "./index.module.scss";
 
 export const SettingsPage = () => {
   const { refresh } = useData();
+  const { showToast } = useToast();
+  const { themePreset, setThemePreset } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   const handleExport = async () => {
     const payload = await exportDatabase();
@@ -21,10 +27,10 @@ export const SettingsPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `skrudge-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `scrooge-backup-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setMessage("Резервная копия сохранена");
+    showToast("Резервная копия сохранена", "success");
   };
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -41,9 +47,13 @@ export const SettingsPage = () => {
 
       await importDatabase(payload);
       await refresh();
-      setMessage("Данные успешно восстановлены");
+      const importedTheme = payload.settings?.find((setting) => setting.key === "themePreset")?.value;
+      if (isThemePresetId(importedTheme)) {
+        await setThemePreset(importedTheme);
+      }
+      showToast("Данные успешно восстановлены", "success");
     } catch {
-      setMessage("Не удалось импортировать файл");
+      showToast("Не удалось импортировать файл", "error");
     } finally {
       event.target.value = "";
     }
@@ -55,13 +65,48 @@ export const SettingsPage = () => {
 
     await clearDatabase();
     await seedCategoriesIfEmpty();
+    await setThemePreset("vault");
     await refresh();
-    setMessage("Данные очищены, категории по умолчанию восстановлены");
+    showToast("Данные очищены", "info");
+  };
+
+  const handleThemeChange = async (presetId: typeof themePreset) => {
+    if (presetId === themePreset) return;
+    await setThemePreset(presetId);
   };
 
   return (
     <div className={styles.page}>
-      {message && <p className={styles.message}>{message}</p>}
+      <Card className={styles.section} fullWidth gap="12" padding="16">
+        <h2 className={styles.title}>Цветовая тема</h2>
+        <p className={styles.description}>
+          Выберите пресет оформления приложения. Настройка сохраняется на устройстве.
+        </p>
+        <div className={styles.themeGrid}>
+          {THEME_PRESETS.map((preset) => {
+            const isActive = themePreset === preset.id;
+
+            return (
+              <button
+                className={cn(styles.themeOption, isActive && styles.themeOptionActive)}
+                key={preset.id}
+                onClick={() => void handleThemeChange(preset.id)}
+                type="button"
+              >
+                <span className={styles.themeSwatches}>
+                  {preset.swatch.map((color) => (
+                    <span className={styles.themeSwatch} key={color} style={{ backgroundColor: color }} />
+                  ))}
+                </span>
+                <span className={styles.themeMeta}>
+                  <span className={styles.themeLabel}>{preset.label}</span>
+                  <span className={styles.themeHint}>{preset.description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
 
       <Card className={styles.section} fullWidth gap="12" padding="16">
         <h2 className={styles.title}>Резервная копия</h2>
@@ -96,7 +141,8 @@ export const SettingsPage = () => {
       </Card>
 
       <Card className={styles.about} fullWidth gap="8" padding="16">
-        <h2 className={styles.title}>Skrudge Vault</h2>
+        <ScroogeArt size="md" variant="about" />
+        <h2 className={styles.title}>Scrooge Vault</h2>
         <p className={styles.description}>Личный учёт денег. Все данные хранятся только на вашем устройстве.</p>
         <span className={styles.version}>Валюта: ₽ · v0.1.0</span>
       </Card>

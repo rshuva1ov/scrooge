@@ -1,5 +1,5 @@
 {
-  "name": "skrudge",
+  "name": "scrooge",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,6 +20,7 @@
     "@tanstack/react-router": "^1.170.18",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.21",
+    "framer-motion": "^12.42.2",
     "idb": "^8.0.3",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",

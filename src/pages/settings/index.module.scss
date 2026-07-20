@@ -15,6 +15,57 @@
   @include font(0.875rem, 400, 1.375rem, var(--text-secondary));
 }
 
+.themeGrid {
+  @include flex(stretch, flex-start, 0.5rem, column);
+}
+
+.themeOption {
+  @include flex(center, flex-start, 0.75rem);
+  width: 100%;
+  padding: 0.75rem;
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.themeOptionActive {
+  border-color: var(--border-accent);
+  background: var(--gold-soft);
+  box-shadow: inset 0 0 0 0.0625rem var(--border-accent);
+}
+
+.themeSwatches {
+  @include flex(stretch, flex-start, 0.1875rem, column);
+  flex-shrink: 0;
+  overflow: hidden;
+  width: 1.75rem;
+  border: 0.0625rem solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.themeSwatch {
+  display: block;
+  width: 100%;
+  height: 0.875rem;
+}
+
+.themeMeta {
+  @include flex(flex-start, flex-start, 0.125rem, column);
+  min-width: 0;
+}
+
+.themeLabel {
+  @include font(0.9375rem, 600, 1.25rem, var(--text-primary));
+}
+
+.themeHint {
+  @include font(0.8125rem, 400, 1.125rem, var(--text-secondary));
+}
+
 .hiddenInput {
   display: none;
 }

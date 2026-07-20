@@ -58,7 +58,7 @@
 }
 
 .filtersSummary {
-  @include flex(center, space-between);
+  @include flex(center, space-between, 0.75rem);
   padding: 0.875rem 1rem;
   cursor: pointer;
   list-style: none;
@@ -79,8 +79,11 @@
 }
 
 .filtersChevron {
+  @include flex(center, center);
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
   color: var(--text-tertiary);
-  font-size: 0.75rem;
   transition: transform 0.2s ease;
 }
 
@@ -121,6 +124,48 @@
 
 .chartCard {
   @include flex(stretch, flex-start, 0.5rem, column);
+}
+
+.chartsSection {
+  @include flex(stretch, flex-start, var(--section-gap), column);
+}
+
+.monthNav {
+  @include flex(center, space-between, 0.75rem);
+  padding: 0.625rem 0.75rem;
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.monthNavButton {
+  @include flex(center, center);
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.96);
+  }
+}
+
+.monthNavLabel {
+  @include font(0.9375rem, 600, 1.25rem, var(--text-primary));
+  flex: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .chartTitle {

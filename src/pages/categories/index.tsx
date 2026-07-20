@@ -1,7 +1,9 @@
-import cn from "classnames";
-import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import cn from "classnames";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+
+import { useToast } from "@/app/providers/toastProvider";
 import { useData } from "@/app/providers/useData";
 import { deleteCategory, saveCategory } from "@/entities/category/api/categoryRepo";
 import type { TCategory, TCategoryType } from "@/entities/category/model/types";
@@ -29,6 +31,7 @@ const DEFAULT_FORM: TCategoryFormValues = {
 
 export const CategoriesPage = () => {
   const { categories, refresh } = useData();
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<TCategoryFormValues>(DEFAULT_FORM);
@@ -81,11 +84,13 @@ export const CategoriesPage = () => {
     });
     await refresh();
     setIsOpen(false);
+    showToast(editingId ? "Категория обновлена" : "Категория создана", "success");
   };
 
   const handleDelete = async (id: string) => {
     await deleteCategory(id);
     await refresh();
+    showToast("Категория удалена", "info");
   };
 
   const renderGroup = (title: string, items: TCategory[], typeLabel: string) => (
@@ -138,8 +143,11 @@ export const CategoriesPage = () => {
       {renderGroup("Доходы", grouped.income, "Доход")}
       {renderGroup("Расходы", grouped.expense, "Расход")}
 
-      {isOpen && (
-        <ModalSheet onClose={() => setIsOpen(false)} title={editingId ? "Редактировать" : "Новая категория"}>
+      <ModalSheet
+        onClose={() => setIsOpen(false)}
+        open={isOpen}
+        title={editingId ? "Редактировать" : "Новая категория"}
+      >
           <div className={styles.form}>
             <Input
               error={errors.name}
@@ -196,7 +204,6 @@ export const CategoriesPage = () => {
             </Button>
           </div>
         </ModalSheet>
-      )}
     </div>
   );
 };

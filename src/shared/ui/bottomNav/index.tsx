@@ -1,6 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import cn from "classnames";
 import { BarChart3, FolderOpen, Settings, Wallet } from "lucide-react";
+
+import { springSnappy } from "@/shared/lib/motion/presets";
 
 import styles from "./index.module.scss";
 
@@ -25,6 +28,13 @@ export const BottomNav = () => {
             key={to}
             to={to}
           >
+            {isActive && (
+              <motion.span
+                className={styles.activePill}
+                layoutId="bottom-nav-active"
+                transition={springSnappy}
+              />
+            )}
             <span className={styles.icon}>
               <Icon size={20} strokeWidth={1.75} />
             </span>

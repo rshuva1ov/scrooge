@@ -13,10 +13,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "icons/icon-192.svg", "icons/icon-512.svg"],
+      includeAssets: ["favicon.svg", "icons/icon-192.svg", "icons/icon-512.svg", "assets/scrooge/**/*"],
       manifest: {
-        name: "Skrudge Vault",
-        short_name: "Skrudge",
+        name: "Scrooge Vault",
+        short_name: "Scrooge",
         description: "Личный сейф — учёт денег только на устройстве",
         theme_color: "#1a2620",
         background_color: "#101915",

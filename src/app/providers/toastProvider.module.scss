@@ -1,0 +1,32 @@
+.viewport {
+  @include flex(stretch, flex-start, 0.5rem, column);
+  position: fixed;
+  top: calc(var(--safe-top) + var(--header-height) - 0.375rem);
+  right: var(--page-padding);
+  left: var(--page-padding);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.toast {
+  @include font(0.875rem, 500, 1.25rem, var(--text-primary));
+  padding: 0.75rem 1rem;
+  border: 0.0625rem solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--toast-bg);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(0.75rem);
+  pointer-events: auto;
+}
+
+.toast[data-tone="success"] {
+  border-color: rgb(95 214 138 / 0.45);
+}
+
+.toast[data-tone="error"] {
+  border-color: rgb(240 113 120 / 0.45);
+}
+
+.toast[data-tone="info"] {
+  border-color: var(--border-accent);
+}

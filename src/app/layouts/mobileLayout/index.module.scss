@@ -12,7 +12,7 @@
   @include flex(center, flex-start, 0.75rem);
   flex-shrink: 0;
   padding: 0.875rem var(--page-padding);
-  background: rgb(26 38 32 / 0.92);
+  background: var(--header-bg);
   border-bottom: 0.0625rem solid var(--border-default);
   backdrop-filter: blur(0.75rem);
 }
@@ -46,8 +46,14 @@
   margin-top: 0.125rem;
 }
 
-.duckWrap {
+.headerArt {
   flex-shrink: 0;
+}
+
+.page {
+  @include flex(stretch, flex-start, 0, column);
+  width: 100%;
+  min-height: 100%;
 }
 
 .content {
