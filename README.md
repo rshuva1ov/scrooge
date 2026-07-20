@@ -29,6 +29,29 @@ pnpm build
 pnpm preview
 ```
 
+## Деплой на Vercel
+
+Три среды:
+
+| Среда | Когда | Команда |
+| --- | --- | --- |
+| **Local** | разработка на машине | `pnpm dev` |
+| **Preview** | ветка ≠ `main`, PR | push в Git или `pnpm deploy:preview` |
+| **Production** | боевой сайт | merge в `main` или `pnpm deploy:prod` |
+
+### Локальная разработка с переменными Vercel
+
+```bash
+pnpm dlx vercel link
+pnpm env:pull
+pnpm dev
+```
+
+`pnpm env:pull` создаёт `.env.local` из настроек проекта в Vercel Dashboard.  
+Для preview/production переменных: `pnpm env:pull:preview` или `pnpm env:pull:production`.
+
+Переменные для клиента в Vite должны начинаться с `VITE_` (см. `.env.example`).
+
 ## Качество кода
 
 ```bash

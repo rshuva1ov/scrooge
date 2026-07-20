@@ -1,8 +1,10 @@
 import cn from "classnames";
-import { ChevronDown } from "lucide-react";
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 
+import { Select } from "./select";
 import styles from "./index.module.scss";
+
+export { Select };
 
 interface IFieldProps {
   label?: string;
@@ -19,27 +21,6 @@ export const Input = ({ label, error, className, id, ...props }: IInputProps) =>
     <label className={cn(styles.field, className)} htmlFor={inputId}>
       {label && <span className={styles.label}>{label}</span>}
       <input className={styles.input} id={inputId} {...props} />
-      {error && <span className={styles.error}>{error}</span>}
-    </label>
-  );
-};
-
-interface ISelectProps extends SelectHTMLAttributes<HTMLSelectElement>, IFieldProps {
-  children: ReactNode;
-}
-
-export const Select = ({ label, error, className, id, children, ...props }: ISelectProps) => {
-  const selectId = id ?? label?.toLowerCase().replace(/\s/g, "-");
-
-  return (
-    <label className={cn(styles.field, className)} htmlFor={selectId}>
-      {label && <span className={styles.label}>{label}</span>}
-      <div className={styles.selectWrap}>
-        <select className={styles.select} id={selectId} {...props}>
-          {children}
-        </select>
-        <ChevronDown aria-hidden className={styles.selectIcon} size={18} strokeWidth={2} />
-      </div>
       {error && <span className={styles.error}>{error}</span>}
     </label>
   );

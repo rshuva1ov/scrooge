@@ -213,7 +213,7 @@ export const LedgerPage = () => {
           >
             {filteredCategories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.icon} {category.name}
+                {`${category.icon} ${category.name}`}
               </option>
             ))}
           </Select>
