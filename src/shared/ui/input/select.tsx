@@ -1,9 +1,6 @@
 import cn from "classnames";
 import { Check, ChevronDown } from "lucide-react";
 import {
-  Children,
-  isValidElement,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -12,11 +9,12 @@ import {
   type ReactNode,
   type SelectHTMLAttributes
 } from "react";
-import { createPortal } from "react-dom";
 
-import { computeFixedMenuStyle } from "@/shared/lib/floatingMenu";
+import { computeFixedMenuStyle, moveActiveIndex } from "@/shared/lib/floatingMenu";
+import { FloatingPortal } from "@/shared/ui/floatingPortal";
 
 import styles from "./index.module.scss";
+import { parseSelectOptions } from "./parseSelectOptions";
 
 interface IFieldProps {
   label?: string;
@@ -24,38 +22,10 @@ interface IFieldProps {
   className?: string;
 }
 
-interface ISelectOption {
-  value: string;
-  label: string;
-  disabled?: boolean;
-}
-
 interface ISelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange">, IFieldProps {
   children: ReactNode;
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
 }
-
-const parseOptions = (children: ReactNode): ISelectOption[] => {
-  const options: ISelectOption[] = [];
-
-  Children.forEach(children, (child) => {
-    if (!isValidElement<{ value?: string; disabled?: boolean; children?: ReactNode }>(child)) {
-      return;
-    }
-
-    if (child.type !== "option") {
-      return;
-    }
-
-    options.push({
-      value: String(child.props.value ?? ""),
-      label: String(child.props.children ?? ""),
-      disabled: Boolean(child.props.disabled)
-    });
-  });
-
-  return options;
-};
 
 export const Select = ({
   label,
@@ -69,14 +39,19 @@ export const Select = ({
   name
 }: ISelectProps) => {
   const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s/g, "-");
-  const options = useMemo(() => parseOptions(children), [children]);
+  const options = parseSelectOptions(children);
+  const enabledIndexes = options.flatMap((option, index) => (option.disabled ? [] : [index]));
   const selectedValue = String(value ?? "");
   const selectedOption = options.find((option) => option.value === selectedValue);
   const open = menuStyle !== null;
 
-  const close = () => setMenuStyle(null);
+  const close = () => {
+    setMenuStyle(null);
+    setActiveIndex(-1);
+  };
 
   const handleToggle = () => {
     if (open) {
@@ -90,19 +65,50 @@ export const Select = ({
       return;
     }
 
+    const selectedIndex = options.findIndex((option) => option.value === selectedValue && !option.disabled);
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0] ?? -1));
     setMenuStyle(computeFixedMenuStyle(trigger));
   };
 
   const handleSelect = (optionValue: string) => {
     onChange?.({ target: { value: optionValue } } as ChangeEvent<HTMLSelectElement>);
     close();
+    triggerRef.current?.focus();
   };
 
-  const handleMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
+      event.preventDefault();
       event.stopPropagation();
       close();
       triggerRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      const option = options[activeIndex];
+
+      if (option && !option.disabled) {
+        handleSelect(option.value);
+      }
+
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+
+      if (enabledIndexes.length === 0) {
+        return;
+      }
+
+      const nextEnabledPos = moveActiveIndex(
+        enabledIndexes.indexOf(activeIndex),
+        event.key,
+        enabledIndexes.length
+      );
+      setActiveIndex(enabledIndexes[nextEnabledPos] ?? -1);
     }
   };
 
@@ -118,12 +124,10 @@ export const Select = ({
           aria-controls={open ? `${selectId}-listbox` : undefined}
           aria-expanded={open}
           aria-haspopup="listbox"
-          className={cn(
-            styles.select,
-            styles.selectTrigger,
-            open && styles.selectTriggerOpen,
-            error && styles.selectTriggerError
-          )}
+          className={cn(styles.select, styles.selectTrigger, {
+            [styles.selectTriggerOpen]: open,
+            [styles.selectTriggerError]: Boolean(error)
+          })}
           disabled={disabled}
           id={selectId}
           name={name}
@@ -135,53 +139,52 @@ export const Select = ({
         </button>
         <ChevronDown
           aria-hidden
-          className={cn(styles.selectIcon, open && styles.selectIconOpen)}
+          className={cn(styles.selectIcon, { [styles.selectIconOpen]: open })}
           size={18}
           strokeWidth={2}
         />
-        {open &&
-          createPortal(
-            <>
-              <button
-                aria-label="Закрыть список"
-                className={styles.floatingBackdrop}
-                onClick={close}
-                type="button"
-              />
-              <ul
-                aria-labelledby={selectId}
-                className={styles.selectMenu}
-                id={`${selectId}-listbox`}
-                onKeyDown={handleMenuKeyDown}
-                role="listbox"
-                style={menuStyle}
-                tabIndex={-1}
-              >
-                {options.map((option) => {
-                  const isSelected = option.value === selectedValue;
+        {open && (
+          <FloatingPortal
+            ariaLabelledBy={selectId}
+            className={styles.selectMenu}
+            id={`${selectId}-listbox`}
+            onClose={close}
+            onKeyDown={handleMenuKeyDown}
+            role="listbox"
+            style={menuStyle}
+          >
+            <ul>
+              {options.map((option, index) => {
+                const isSelected = option.value === selectedValue;
 
-                  return (
-                    <li key={option.value} role="presentation">
-                      <button
-                        aria-selected={isSelected}
-                        className={cn(styles.selectOption, isSelected && styles.selectOptionActive)}
-                        disabled={option.disabled}
-                        onClick={() => handleSelect(option.value)}
-                        role="option"
-                        type="button"
-                      >
-                        <span className={styles.selectOptionLabel}>{option.label}</span>
-                        {isSelected && (
-                          <Check aria-hidden className={styles.selectOptionCheck} size={16} strokeWidth={2.5} />
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>,
-            document.body
-          )}
+                return (
+                  <li key={option.value} role="presentation">
+                    <button
+                      aria-selected={isSelected}
+                      className={cn(styles.selectOption, {
+                        [styles.selectOptionActive]: isSelected || index === activeIndex
+                      })}
+                      disabled={option.disabled}
+                      onClick={() => handleSelect(option.value)}
+                      onMouseEnter={() => {
+                        if (!option.disabled) {
+                          setActiveIndex(index);
+                        }
+                      }}
+                      role="option"
+                      type="button"
+                    >
+                      <span className={styles.selectOptionLabel}>{option.label}</span>
+                      {isSelected && (
+                        <Check aria-hidden className={styles.selectOptionCheck} size={16} strokeWidth={2.5} />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </FloatingPortal>
+        )}
       </div>
       {error && <span className={styles.error}>{error}</span>}
     </div>

@@ -103,7 +103,6 @@
 
 .form {
   @include flex(stretch, flex-start, 0.75rem, column);
-  padding-bottom: 0.25rem;
 }
 
 .typeToggle {

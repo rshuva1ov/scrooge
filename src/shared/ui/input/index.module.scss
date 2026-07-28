@@ -12,21 +12,6 @@
   width: 100%;
 }
 
-.floatingBackdrop {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 49;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: default;
-  -webkit-tap-highlight-color: transparent;
-}
-
 .selectIcon {
   position: absolute;
   top: 50%;
@@ -103,13 +88,19 @@
   padding: 0.375rem;
   overflow-x: hidden;
   overflow-y: auto;
-  list-style: none;
   border: 0.0625rem solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   box-shadow: var(--shadow-md);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  outline: none;
+
+  > ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 }
 
 .selectOption {
@@ -215,6 +206,7 @@
   box-shadow: var(--shadow-md);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  outline: none;
 }
 
 .dateHeader {

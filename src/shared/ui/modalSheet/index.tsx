@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { type KeyboardEvent, type ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import cn from "classnames";
 
+import { getFocusableElements, trapFocusKeyDown } from "@/shared/lib/floatingMenu";
 import { springSoft } from "@/shared/lib/motion/presets";
 
 import styles from "./index.module.scss";
@@ -17,10 +18,44 @@ interface IModalSheetProps {
 }
 
 export const ModalSheet = ({ open, title, children, footer, onClose }: IModalSheetProps) => {
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const sheetCleanupRef = useRef<(() => void) | null>(null);
+
   const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
       onClose();
     }
+  };
+
+  const setSheetRef = (node: HTMLDivElement | null) => {
+    sheetCleanupRef.current?.();
+    sheetCleanupRef.current = null;
+
+    if (!node) {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+      return;
+    }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusInitial = () => {
+      const focusable = getFocusableElements(node);
+      (focusable[0] ?? node).focus();
+    };
+
+    const frameId = requestAnimationFrame(focusInitial);
+
+    const handleKeyDown = (event: Event) => {
+      trapFocusKeyDown(event as globalThis.KeyboardEvent, node);
+    };
+
+    node.addEventListener("keydown", handleKeyDown);
+
+    sheetCleanupRef.current = () => {
+      cancelAnimationFrame(frameId);
+      node.removeEventListener("keydown", handleKeyDown);
+    };
   };
 
   return createPortal(
@@ -46,6 +81,7 @@ export const ModalSheet = ({ open, title, children, footer, onClose }: IModalShe
             exit={{ y: "100%" }}
             initial={{ y: "100%" }}
             onClick={(event) => event.stopPropagation()}
+            ref={setSheetRef}
             role="dialog"
             transformTemplate={({ y }) => {
               const offset = typeof y === "string" ? Number.parseFloat(y) : Number(y);

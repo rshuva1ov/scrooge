@@ -15,6 +15,8 @@
     "type-check": "tsc --noEmit --project tsconfig.app.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "prepush": "pnpm type-check && pnpm test && pnpm build",
+    "prepare": "node ./scripts/install-hooks.mjs",
     "env:pull": "vercel env pull .env.local",
     "env:pull:preview": "vercel env pull .env.local --environment=preview",
     "env:pull:production": "vercel env pull .env.local --environment=production",

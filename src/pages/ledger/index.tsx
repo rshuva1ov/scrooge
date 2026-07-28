@@ -39,6 +39,7 @@ export const LedgerPage = () => {
   const { categories, transactions, refresh } = useData();
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<TTransactionFormValues>(() => getDefaultForm(categories));
   const [errors, setErrors] = useState<Partial<Record<keyof TTransactionFormValues, string>>>({});
 
@@ -82,6 +83,10 @@ export const LedgerPage = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const parsed = transactionSchema.safeParse(form);
 
     if (!parsed.success) {
@@ -96,13 +101,19 @@ export const LedgerPage = () => {
       return;
     }
 
-    await saveTransaction({
-      ...parsed.data,
-      date: new Date(parsed.data.date).toISOString()
-    });
-    await refresh();
-    setIsOpen(false);
-    showToast(parsed.data.type === "income" ? "Доход добавлен" : "Расход добавлен", "success");
+    setIsSubmitting(true);
+
+    try {
+      await saveTransaction({
+        ...parsed.data,
+        date: new Date(parsed.data.date).toISOString()
+      });
+      await refresh();
+      setIsOpen(false);
+      showToast(parsed.data.type === "income" ? "Доход добавлен" : "Расход добавлен", "success");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -175,11 +186,15 @@ export const LedgerPage = () => {
 
       <ModalSheet
         footer={
-          <Button fullWidth onClick={() => void handleSubmit()} type="button">
-            Сохранить
+          <Button disabled={isSubmitting} fullWidth onClick={() => void handleSubmit()} type="button">
+            {isSubmitting ? "Сохранение..." : "Сохранить"}
           </Button>
         }
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsOpen(false);
+          }
+        }}
         open={isOpen}
         title="Новая операция"
       >

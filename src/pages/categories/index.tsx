@@ -33,6 +33,7 @@ export const CategoriesPage = () => {
   const { categories, refresh } = useData();
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<TCategoryFormValues>(DEFAULT_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof TCategoryFormValues, string>>>({});
@@ -64,6 +65,10 @@ export const CategoriesPage = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const parsed = categorySchema.safeParse(form);
 
     if (!parsed.success) {
@@ -78,13 +83,19 @@ export const CategoriesPage = () => {
       return;
     }
 
-    await saveCategory({
-      id: editingId ?? createId(),
-      ...parsed.data
-    });
-    await refresh();
-    setIsOpen(false);
-    showToast(editingId ? "Категория обновлена" : "Категория создана", "success");
+    setIsSubmitting(true);
+
+    try {
+      await saveCategory({
+        id: editingId ?? createId(),
+        ...parsed.data
+      });
+      await refresh();
+      setIsOpen(false);
+      showToast(editingId ? "Категория обновлена" : "Категория создана", "success");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -145,11 +156,15 @@ export const CategoriesPage = () => {
 
       <ModalSheet
         footer={
-          <Button fullWidth onClick={() => void handleSubmit()} type="button">
-            Сохранить
+          <Button disabled={isSubmitting} fullWidth onClick={() => void handleSubmit()} type="button">
+            {isSubmitting ? "Сохранение..." : "Сохранить"}
           </Button>
         }
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsOpen(false);
+          }
+        }}
         open={isOpen}
         title={editingId ? "Редактировать" : "Новая категория"}
       >
