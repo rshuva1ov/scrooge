@@ -57,14 +57,19 @@
 
 .form {
   @include flex(stretch, flex-start, 0.75rem, column);
+  padding-bottom: 0.25rem;
 }
 
 .picker {
   @include flex(flex-start, flex-start, 0.5rem, column);
+  width: 100%;
+  min-width: 0;
 }
 
 .pickerRow {
   @include flex(center, flex-start, 0.375rem);
+  width: 100%;
+  min-width: 0;
   flex-wrap: wrap;
 }
 

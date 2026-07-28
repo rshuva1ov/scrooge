@@ -144,66 +144,67 @@ export const CategoriesPage = () => {
       {renderGroup("Расходы", grouped.expense, "Расход")}
 
       <ModalSheet
+        footer={
+          <Button fullWidth onClick={() => void handleSubmit()} type="button">
+            Сохранить
+          </Button>
+        }
         onClose={() => setIsOpen(false)}
         open={isOpen}
         title={editingId ? "Редактировать" : "Новая категория"}
       >
-          <div className={styles.form}>
-            <Input
-              error={errors.name}
-              label="Название"
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              value={form.name}
-            />
+        <div className={styles.form}>
+          <Input
+            error={errors.name}
+            label="Название"
+            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+            value={form.name}
+          />
 
-            <Select
-              label="Тип"
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, type: event.target.value as TCategoryType }))
-              }
-              value={form.type}
-            >
-              <option value="expense">Расход</option>
-              <option value="income">Доход</option>
-            </Select>
+          <Select
+            label="Тип"
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, type: event.target.value as TCategoryType }))
+            }
+            value={form.type}
+          >
+            <option value="expense">Расход</option>
+            <option value="income">Доход</option>
+          </Select>
 
-            <div className={styles.picker}>
-              <span className={styles.pickerLabel}>Иконка</span>
-              <div className={styles.pickerRow}>
-                {CATEGORY_ICONS.map((icon) => (
-                  <button
-                    className={cn(styles.pickerItem, form.icon === icon && styles.pickerItemActive)}
-                    key={icon}
-                    onClick={() => setForm((prev) => ({ ...prev, icon }))}
-                    type="button"
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+          <div className={styles.picker}>
+            <span className={styles.pickerLabel}>Иконка</span>
+            <div className={styles.pickerRow}>
+              {CATEGORY_ICONS.map((icon) => (
+                <button
+                  className={cn(styles.pickerItem, form.icon === icon && styles.pickerItemActive)}
+                  key={icon}
+                  onClick={() => setForm((prev) => ({ ...prev, icon }))}
+                  type="button"
+                >
+                  {icon}
+                </button>
+              ))}
             </div>
-
-            <div className={styles.picker}>
-              <span className={styles.pickerLabel}>Цвет</span>
-              <div className={styles.pickerRow}>
-                {CATEGORY_COLORS.map((color) => (
-                  <button
-                    className={cn(styles.pickerItem, form.color === color && styles.pickerItemActive)}
-                    key={color}
-                    onClick={() => setForm((prev) => ({ ...prev, color }))}
-                    type="button"
-                  >
-                    <span className={styles.colorDot} style={{ backgroundColor: color }} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Button fullWidth onClick={() => void handleSubmit()} type="button">
-              Сохранить
-            </Button>
           </div>
-        </ModalSheet>
+
+          <div className={styles.picker}>
+            <span className={styles.pickerLabel}>Цвет</span>
+            <div className={styles.pickerRow}>
+              {CATEGORY_COLORS.map((color) => (
+                <button
+                  className={cn(styles.pickerItem, form.color === color && styles.pickerItemActive)}
+                  key={color}
+                  onClick={() => setForm((prev) => ({ ...prev, color }))}
+                  type="button"
+                >
+                  <span className={styles.colorDot} style={{ backgroundColor: color }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ModalSheet>
     </div>
   );
 };

@@ -1,10 +1,11 @@
 import cn from "classnames";
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 
+import { DateInput } from "./date";
 import { Select } from "./select";
 import styles from "./index.module.scss";
 
-export { Select };
+export { DateInput, Select };
 
 interface IFieldProps {
   label?: string;
@@ -14,13 +15,17 @@ interface IFieldProps {
 
 interface IInputProps extends InputHTMLAttributes<HTMLInputElement>, IFieldProps {}
 
-export const Input = ({ label, error, className, id, ...props }: IInputProps) => {
+export const Input = ({ label, error, className, id, type, ...props }: IInputProps) => {
+  if (type === "date") {
+    return <DateInput className={className} error={error} id={id} label={label} {...props} />;
+  }
+
   const inputId = id ?? label?.toLowerCase().replace(/\s/g, "-");
 
   return (
     <label className={cn(styles.field, className)} htmlFor={inputId}>
       {label && <span className={styles.label}>{label}</span>}
-      <input className={styles.input} id={inputId} {...props} />
+      <input className={styles.input} id={inputId} type={type} {...props} />
       {error && <span className={styles.error}>{error}</span>}
     </label>
   );

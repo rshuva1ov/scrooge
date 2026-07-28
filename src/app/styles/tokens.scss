@@ -144,8 +144,8 @@
   --shadow-sm: 0 0.0625rem 0.25rem rgb(0 0 0 / 0.18);
   --shadow-md: 0 0.375rem 1.25rem rgb(0 0 0 / 0.24);
 
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --header-height: 6.125rem;
   --nav-height: 3.75rem;
   --page-padding: 1rem;

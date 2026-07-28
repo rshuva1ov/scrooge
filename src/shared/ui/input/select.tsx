@@ -3,14 +3,18 @@ import { Check, ChevronDown } from "lucide-react";
 import {
   Children,
   isValidElement,
-  useEffect,
   useMemo,
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
+  type KeyboardEvent,
   type ReactNode,
   type SelectHTMLAttributes
 } from "react";
+import { createPortal } from "react-dom";
+
+import { computeFixedMenuStyle } from "@/shared/lib/floatingMenu";
 
 import styles from "./index.module.scss";
 
@@ -64,37 +68,42 @@ export const Select = ({
   disabled,
   name
 }: ISelectProps) => {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s/g, "-");
   const options = useMemo(() => parseOptions(children), [children]);
   const selectedValue = String(value ?? "");
   const selectedOption = options.find((option) => option.value === selectedValue);
+  const open = menuStyle !== null;
 
-  useEffect(() => {
-    if (!open) {
+  const close = () => setMenuStyle(null);
+
+  const handleToggle = () => {
+    if (open) {
+      close();
       return;
     }
 
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!wrapRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
+    const trigger = triggerRef.current;
 
-    const frameId = requestAnimationFrame(() => {
-      document.addEventListener("pointerdown", handlePointerDown);
-    });
+    if (!trigger) {
+      return;
+    }
 
-    return () => {
-      cancelAnimationFrame(frameId);
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [open]);
+    setMenuStyle(computeFixedMenuStyle(trigger));
+  };
 
   const handleSelect = (optionValue: string) => {
     onChange?.({ target: { value: optionValue } } as ChangeEvent<HTMLSelectElement>);
-    setOpen(false);
+    close();
+  };
+
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      close();
+      triggerRef.current?.focus();
+    }
   };
 
   return (
@@ -104,8 +113,9 @@ export const Select = ({
           {label}
         </label>
       )}
-      <div className={styles.selectWrap} ref={wrapRef}>
+      <div className={styles.selectWrap}>
         <button
+          aria-controls={open ? `${selectId}-listbox` : undefined}
           aria-expanded={open}
           aria-haspopup="listbox"
           className={cn(
@@ -117,7 +127,8 @@ export const Select = ({
           disabled={disabled}
           id={selectId}
           name={name}
-          onClick={() => setOpen((current) => !current)}
+          onClick={handleToggle}
+          ref={triggerRef}
           type="button"
         >
           <span className={styles.selectValue}>{selectedOption?.label ?? "Выберите"}</span>
@@ -128,31 +139,49 @@ export const Select = ({
           size={18}
           strokeWidth={2}
         />
-        {open && (
-          <ul aria-labelledby={selectId} className={styles.selectMenu} role="listbox">
-            {options.map((option) => {
-              const isSelected = option.value === selectedValue;
+        {open &&
+          createPortal(
+            <>
+              <button
+                aria-label="Закрыть список"
+                className={styles.floatingBackdrop}
+                onClick={close}
+                type="button"
+              />
+              <ul
+                aria-labelledby={selectId}
+                className={styles.selectMenu}
+                id={`${selectId}-listbox`}
+                onKeyDown={handleMenuKeyDown}
+                role="listbox"
+                style={menuStyle}
+                tabIndex={-1}
+              >
+                {options.map((option) => {
+                  const isSelected = option.value === selectedValue;
 
-              return (
-                <li key={option.value} role="presentation">
-                  <button
-                    aria-selected={isSelected}
-                    className={cn(styles.selectOption, isSelected && styles.selectOptionActive)}
-                    disabled={option.disabled}
-                    onClick={() => handleSelect(option.value)}
-                    role="option"
-                    type="button"
-                  >
-                    <span className={styles.selectOptionLabel}>{option.label}</span>
-                    {isSelected && (
-                      <Check aria-hidden className={styles.selectOptionCheck} size={16} strokeWidth={2.5} />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  return (
+                    <li key={option.value} role="presentation">
+                      <button
+                        aria-selected={isSelected}
+                        className={cn(styles.selectOption, isSelected && styles.selectOptionActive)}
+                        disabled={option.disabled}
+                        onClick={() => handleSelect(option.value)}
+                        role="option"
+                        type="button"
+                      >
+                        <span className={styles.selectOptionLabel}>{option.label}</span>
+                        {isSelected && (
+                          <Check aria-hidden className={styles.selectOptionCheck} size={16} strokeWidth={2.5} />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>,
+            document.body
+          )}
       </div>
       {error && <span className={styles.error}>{error}</span>}
     </div>

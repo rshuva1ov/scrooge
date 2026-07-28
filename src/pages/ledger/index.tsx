@@ -173,7 +173,16 @@ export const LedgerPage = () => {
         document.body
       )}
 
-      <ModalSheet onClose={() => setIsOpen(false)} open={isOpen} title="Новая операция">
+      <ModalSheet
+        footer={
+          <Button fullWidth onClick={() => void handleSubmit()} type="button">
+            Сохранить
+          </Button>
+        }
+        onClose={() => setIsOpen(false)}
+        open={isOpen}
+        title="Новая операция"
+      >
         <div className={styles.form}>
           <div className={styles.typeToggle}>
             <Button
@@ -232,10 +241,6 @@ export const LedgerPage = () => {
             placeholder="Необязательно"
             value={form.note}
           />
-
-          <Button fullWidth onClick={() => void handleSubmit()} type="button">
-            Сохранить
-          </Button>
         </div>
       </ModalSheet>
     </div>
