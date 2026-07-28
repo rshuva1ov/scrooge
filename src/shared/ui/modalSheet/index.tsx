@@ -42,7 +42,7 @@ export const ModalSheet = ({ open, title, children, footer, onClose }: IModalShe
             animate={{ y: 0 }}
             aria-label={title}
             aria-modal="true"
-            className={cn(styles.sheet, footer && styles.sheetWithFooter)}
+            className={cn(styles.sheet, { [styles.sheetWithFooter]: Boolean(footer) })}
             exit={{ y: "100%" }}
             initial={{ y: "100%" }}
             onClick={(event) => event.stopPropagation()}
