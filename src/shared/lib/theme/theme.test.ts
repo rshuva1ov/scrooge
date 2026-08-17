@@ -30,7 +30,7 @@ describe("theme", () => {
 
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(document.documentElement.style.colorScheme).toBe("light");
-    expect(themeColorMeta().getAttribute("content")).toBe("#f2f2f7");
+    expect(themeColorMeta().getAttribute("content")).toBe("#f3efe6");
   });
 
   it("reads a cached theme and maps legacy presets", () => {

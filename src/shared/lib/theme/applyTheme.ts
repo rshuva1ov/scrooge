@@ -3,7 +3,7 @@ import type { TThemeId } from "./types";
 
 const THEME_COLOR: Record<TThemeId, string> = {
   dark: "#141c2c",
-  light: "#f2f2f7"
+  light: "#f3efe6"
 };
 
 export const applyTheme = (themeId: TThemeId): void => {

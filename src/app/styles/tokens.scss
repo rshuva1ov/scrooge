@@ -88,25 +88,25 @@
 [data-theme="light"] {
   color-scheme: light;
   @include theme-colors(
-    #f2f2f7,
-    #ffffff,
-    #e8e8ed,
-    #ffffff,
-    #1c1c1e,
-    #c4a032,
-    #d4b45a,
-    #9a7c24,
-    rgb(196 160 50 / 0.14),
-    rgb(196 160 50 / 0.1),
-    rgb(196 160 50 / 0.4),
-    #f7f7fa,
-    #1f9d55,
-    #d94848,
-    #c9343c,
-    #d70015,
-    rgb(0 0 0 / 0.28)
+    #f3efe6,
+    #fffaf2,
+    #e6ddd0,
+    #fffaf2,
+    #172033,
+    #c17f12,
+    #d4962a,
+    #8f5c0c,
+    rgb(193 127 18 / 0.14),
+    rgb(23 32 51 / 0.06),
+    rgb(193 127 18 / 0.42),
+    #f7f3eb,
+    #1a8f56,
+    #c43c44,
+    #b53038,
+    #c41e3a,
+    rgb(23 18 12 / 0.32)
   );
 
-  --shadow-sm: 0 0.0625rem 0.25rem rgb(0 0 0 / 0.08);
-  --shadow-md: 0 0.375rem 1.25rem rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 0.0625rem 0.25rem rgb(40 28 12 / 0.08);
+  --shadow-md: 0 0.375rem 1.25rem rgb(40 28 12 / 0.12);
 }
