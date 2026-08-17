@@ -5,12 +5,14 @@ import {
   calcSummary,
   DEFAULT_FILTERS,
   filterTransactions,
+  getDefaultPeriodFilters,
   getTopExpenses,
   groupByCategory,
   groupByDay,
   groupByDayInMonth,
   groupByMonth,
   groupByMonthWindow,
+  hasSummaryFilters,
   sanitizeFilters,
   withoutTypeFilter
 } from "@/entities/transaction/lib/reports";
@@ -175,5 +177,39 @@ describe("reports", () => {
 
     const top = getTopExpenses(transactions, 2);
     expect(top.map((item) => item.id)).toEqual(["2", "3"]);
+  });
+
+  it("filters by category and date range inclusively", () => {
+    const filtered = filterTransactions(transactions, {
+      ...DEFAULT_FILTERS,
+      from: "2026-01-01",
+      to: "2026-01-31",
+      categoryIds: ["food"]
+    });
+
+    expect(filtered.map((item) => item.id)).toEqual(["2"]);
+  });
+
+  it("returns zeros for an empty summary", () => {
+    expect(calcSummary([])).toEqual({ income: 0, expense: 0, balance: 0, count: 0 });
+  });
+
+  it("treats only extra conditions as summary filters", () => {
+    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, from: "2026-08-01", to: "2026-08-31" })).toBe(false);
+    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, search: "кофе" })).toBe(true);
+    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, categoryIds: ["food"] })).toBe(true);
+    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, minAmount: 100 })).toBe(true);
+  });
+
+  it("defaults the report period to the current month", () => {
+    const filters = getDefaultPeriodFilters();
+    expect(filters.type).toBe("all");
+    expect(filters.from).toMatch(/^\d{4}-\d{2}-01$/);
+    expect(filters.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(filters.search).toBe("");
+  });
+
+  it("sanitizes a completely invalid payload", () => {
+    expect(sanitizeFilters(null)).toEqual(DEFAULT_FILTERS);
   });
 });

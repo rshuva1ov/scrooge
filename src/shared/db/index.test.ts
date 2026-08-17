@@ -40,4 +40,32 @@ describe("database backup", () => {
     expect(transactions).toHaveLength(1);
     expect(settings[0]?.value).toBe("RUB");
   });
+
+  it("replaces previous data on import", async () => {
+    const db = await getDb();
+    await db.put("transactions", sampleTransaction);
+    await db.put("categories", DEFAULT_CATEGORIES[0]);
+
+    await importDatabase({
+      version: 1,
+      exportedAt: "2026-08-17T12:00:00.000Z",
+      categories: [DEFAULT_CATEGORIES[2]],
+      transactions: [],
+      settings: [{ key: "themePreset", value: "light" }]
+    });
+
+    expect(await db.getAll("transactions")).toEqual([]);
+    expect(await db.getAll("categories")).toEqual([DEFAULT_CATEGORIES[2]]);
+    expect((await db.getAll("settings"))[0]?.value).toBe("light");
+  });
+
+  it("exports an empty vault", async () => {
+    const exported = await exportDatabase();
+
+    expect(exported.version).toBe(1);
+    expect(exported.categories).toEqual([]);
+    expect(exported.transactions).toEqual([]);
+    expect(exported.settings).toEqual([]);
+    expect(exported.exportedAt).toBeTruthy();
+  });
 });

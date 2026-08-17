@@ -9,8 +9,9 @@ import { useData } from "@/app/providers/useData";
 import { transactionSchema, type TTransactionFormValues } from "@/features/add-transaction/model/schema";
 import type { TCategory } from "@/entities/category/model/types";
 import { deleteTransaction, saveTransaction } from "@/entities/transaction/api/transactionRepo";
+import { groupLedgerByMonth } from "@/entities/transaction/lib/groupLedgerByMonth";
 import type { TTransaction, TTransactionType } from "@/entities/transaction/model/types";
-import { formatDisplayDate, formatMonthLabel, getMonthKey, toInputDate } from "@/shared/lib/dates";
+import { formatDisplayDate, toInputDate } from "@/shared/lib/dates";
 import { zodFieldErrors } from "@/shared/lib/zodFieldErrors";
 import { Amount } from "@/shared/ui/amount";
 import { Button } from "@/shared/ui/button";
@@ -58,26 +59,7 @@ export const LedgerPage = () => {
     [categories, form.type]
   );
 
-  const transactionsByMonth = useMemo(() => {
-    const groups: { key: string; label: string; items: TTransaction[] }[] = [];
-
-    for (const transaction of transactions) {
-      const key = getMonthKey(transaction.date);
-      const lastGroup = groups.at(-1);
-
-      if (lastGroup?.key === key) {
-        lastGroup.items.push(transaction);
-      } else {
-        groups.push({
-          key,
-          label: formatMonthLabel(transaction.date),
-          items: [transaction]
-        });
-      }
-    }
-
-    return groups;
-  }, [transactions]);
+  const transactionsByMonth = useMemo(() => groupLedgerByMonth(transactions), [transactions]);
 
   const openCreate = () => {
     setEditingId(null);
