@@ -1,6 +1,6 @@
 import { getDb } from "@/shared/db";
 
-import { DEFAULT_CATEGORIES, type TCategory, type TCategoryType } from "@/entities/category/model/types";
+import { DEFAULT_CATEGORIES, type TCategory } from "@/entities/category/model/types";
 
 export const seedCategoriesIfEmpty = async (): Promise<void> => {
   const db = await getDb();
@@ -18,11 +18,6 @@ export const getAllCategories = async (): Promise<TCategory[]> => {
   return db.getAll("categories");
 };
 
-export const getCategoriesByType = async (type: TCategoryType): Promise<TCategory[]> => {
-  const db = await getDb();
-  return db.getAllFromIndex("categories", "type", type);
-};
-
 export const saveCategory = async (category: TCategory): Promise<void> => {
   const db = await getDb();
   await db.put("categories", category);
@@ -31,9 +26,4 @@ export const saveCategory = async (category: TCategory): Promise<void> => {
 export const deleteCategory = async (id: string): Promise<void> => {
   const db = await getDb();
   await db.delete("categories", id);
-};
-
-export const getCategoryById = async (id: string): Promise<TCategory | undefined> => {
-  const db = await getDb();
-  return db.get("categories", id);
 };

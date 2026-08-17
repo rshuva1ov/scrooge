@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { applyTheme, readCachedTheme } from "@/shared/lib/theme/applyTheme";
-import { getThemePreset, setThemePreset as saveThemePreset } from "@/shared/lib/theme/themeRepo";
-import type { TThemePresetId } from "@/shared/lib/theme/types";
+import { getTheme, setTheme as saveTheme } from "@/shared/lib/theme/themeRepo";
+import type { TThemeId } from "@/shared/lib/theme/types";
 
 import { ThemeContext } from "./useTheme";
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [themePreset, setThemePresetState] = useState<TThemePresetId>(readCachedTheme);
-  const [isLoading, setIsLoading] = useState(true);
+  const [theme, setThemeState] = useState<TThemeId>(readCachedTheme);
 
   useEffect(() => {
     let active = true;
 
-    void getThemePreset().then((preset) => {
+    void getTheme().then((nextTheme) => {
       if (!active) return;
-      setThemePresetState(preset);
-      applyTheme(preset);
-      setIsLoading(false);
+      setThemeState(nextTheme);
+      applyTheme(nextTheme);
     });
 
     return () => {
@@ -25,19 +23,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const setThemePreset = useCallback(async (presetId: TThemePresetId) => {
-    setThemePresetState(presetId);
-    applyTheme(presetId);
-    await saveThemePreset(presetId);
+  const setTheme = useCallback(async (themeId: TThemeId) => {
+    setThemeState(themeId);
+    applyTheme(themeId);
+    await saveTheme(themeId);
   }, []);
 
   const value = useMemo(
     () => ({
-      themePreset,
-      setThemePreset,
-      isLoading
+      theme,
+      setTheme
     }),
-    [themePreset, setThemePreset, isLoading]
+    [theme, setTheme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

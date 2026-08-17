@@ -10,6 +10,7 @@ export interface TTransaction {
 }
 
 export interface TTransactionInput {
+  id?: string;
   amount: number;
   type: TTransactionType;
   categoryId: string;

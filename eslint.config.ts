@@ -48,5 +48,13 @@ export default defineConfig(
         }
       ]
     }
+  },
+  {
+    files: ["scripts/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      globals: globals.node,
+      sourceType: "module"
+    }
   }
 );

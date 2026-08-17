@@ -1,5 +1,6 @@
 import { getDb } from "@/shared/db";
 import { createId } from "@/shared/lib/createId";
+import { toInputDate } from "@/shared/lib/dates";
 
 import type { TTransaction, TTransactionInput } from "@/entities/transaction/model/types";
 
@@ -12,12 +13,12 @@ export const getAllTransactions = async (): Promise<TTransaction[]> => {
 export const saveTransaction = async (input: TTransactionInput): Promise<TTransaction> => {
   const db = await getDb();
   const transaction: TTransaction = {
-    id: createId(),
+    id: input.id ?? createId(),
     amount: Math.abs(input.amount),
     type: input.type,
     categoryId: input.categoryId,
     note: input.note ?? "",
-    date: input.date ?? new Date().toISOString()
+    date: input.date ?? toInputDate(new Date())
   };
 
   await db.put("transactions", transaction);
@@ -27,9 +28,4 @@ export const saveTransaction = async (input: TTransactionInput): Promise<TTransa
 export const deleteTransaction = async (id: string): Promise<void> => {
   const db = await getDb();
   await db.delete("transactions", id);
-};
-
-export const getTransactionById = async (id: string): Promise<TTransaction | undefined> => {
-  const db = await getDb();
-  return db.get("transactions", id);
 };

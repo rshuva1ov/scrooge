@@ -1,11 +1,10 @@
 import { createContext, useContext } from "react";
 
-import type { TThemePresetId } from "@/shared/lib/theme/types";
+import type { TThemeId } from "@/shared/lib/theme/types";
 
 interface IThemeContextValue {
-  themePreset: TThemePresetId;
-  setThemePreset: (presetId: TThemePresetId) => Promise<void>;
-  isLoading: boolean;
+  theme: TThemeId;
+  setTheme: (themeId: TThemeId) => Promise<void>;
 }
 
 export const ThemeContext = createContext<IThemeContextValue | null>(null);

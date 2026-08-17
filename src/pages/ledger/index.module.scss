@@ -101,6 +101,10 @@
   flex-shrink: 0;
 }
 
+.actions {
+  @include flex(center, flex-end, 0.125rem);
+}
+
 .form {
   @include flex(stretch, flex-start, 0.75rem, column);
 }

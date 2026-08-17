@@ -21,13 +21,16 @@ import {
 import { useData } from "@/app/providers/useData";
 import {
   calcSummary,
-  DEFAULT_FILTERS,
   FILTERS_STORAGE_KEY,
   filterTransactions,
+  getDefaultPeriodFilters,
   getTopExpenses,
   groupByCategory,
   groupByDayInMonth,
   groupByMonthWindow,
+  hasSummaryFilters,
+  sanitizeFilters,
+  withoutTypeFilter,
   type ITransactionFilters
 } from "@/entities/transaction/lib/reports";
 import {
@@ -37,15 +40,17 @@ import {
   getMonthKey,
   getMonthRange,
   getPeriodRange,
+  inferPeriodPreset,
   shiftMonthKey,
   type TPeriodPreset
 } from "@/shared/lib/dates";
 import { formatMoney } from "@/shared/lib/formatMoney";
+import { formatRuCount } from "@/shared/lib/formatRuCount";
 import { Amount } from "@/shared/ui/amount";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/emptyState";
-import { Input, Select } from "@/shared/ui/input";
+import { Input } from "@/shared/ui/input";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
 
 import styles from "./index.module.scss";
@@ -74,63 +79,48 @@ const CHART_COLORS = {
   text: "var(--chart-text)"
 };
 
-const loadFilters = (): { filters: ITransactionFilters; preset: TPeriodPreset } => {
+const loadFilters = (): ITransactionFilters => {
   try {
     const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
-    if (!raw) {
-      const monthRange = getPeriodRange("month");
-      return {
-        filters: { ...DEFAULT_FILTERS, from: monthRange.from, to: monthRange.to },
-        preset: "month"
-      };
-    }
-
-    const parsed = JSON.parse(raw) as ITransactionFilters;
-    return {
-      filters: { ...DEFAULT_FILTERS, ...parsed },
-      preset: "month"
-    };
+    return raw ? sanitizeFilters(JSON.parse(raw)) : getDefaultPeriodFilters();
   } catch {
-    const monthRange = getPeriodRange("month");
-    return {
-      filters: { ...DEFAULT_FILTERS, from: monthRange.from, to: monthRange.to },
-      preset: "month"
-    };
+    return getDefaultPeriodFilters();
   }
 };
 
 const getPeriodLabel = (filters: ITransactionFilters): string => {
-  const from = dayjs(filters.from).format("DD.MM.YYYY");
-  const to = dayjs(filters.to).format("DD.MM.YYYY");
-
-  if (from && to) {
-    return `${from} — ${to}`;
+  if (filters.from && filters.to) {
+    return `${dayjs(filters.from).format("DD.MM.YYYY")} — ${dayjs(filters.to).format("DD.MM.YYYY")}`;
   }
-  if (from) {
-    return `с ${from}`;
+  if (filters.from) {
+    return `с ${dayjs(filters.from).format("DD.MM.YYYY")}`;
   }
-  if (to) {
-    return `по ${to}`;
+  if (filters.to) {
+    return `по ${dayjs(filters.to).format("DD.MM.YYYY")}`;
   }
   return "за всё время";
 };
 
 export const ReportsPage = () => {
   const { categories, transactions } = useData();
-  const initial = loadFilters();
-  const [filters, setFilters] = useState<ITransactionFilters>(initial.filters);
-  const [activePreset, setActivePreset] = useState<TPeriodPreset>(initial.preset);
+  const [filters, setFilters] = useState(loadFilters);
+  const [activePreset, setActivePreset] = useState(() => inferPeriodPreset(filters));
 
   useEffect(() => {
     localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
   }, [filters]);
 
-  const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters]);
-  const nonDateFiltered = useMemo(
-    () => filterTransactions(transactions, { ...filters, from: null, to: null }),
-    [transactions, filters]
+  const breakdownFilters = useMemo(() => withoutTypeFilter(filters), [filters]);
+  const breakdown = useMemo(
+    () => filterTransactions(transactions, breakdownFilters),
+    [transactions, breakdownFilters]
   );
-  const summary = useMemo(() => calcSummary(filtered), [filtered]);
+  const nonDateFiltered = useMemo(
+    () => filterTransactions(transactions, { ...breakdownFilters, from: null, to: null }),
+    [transactions, breakdownFilters]
+  );
+  const summary = useMemo(() => calcSummary(breakdown), [breakdown]);
+  const summaryFiltersActive = hasSummaryFilters(filters);
   const chartMonth = getChartMonthKey(filters);
   const monthLimits = useMemo(() => {
     const currentMonth = getMonthKey(new Date());
@@ -147,17 +137,17 @@ export const ReportsPage = () => {
   const byCategory = useMemo(
     () =>
       groupByCategory(
-        filtered.filter((item) => item.type === "expense"),
+        breakdown.filter((item) => item.type === "expense"),
         categories
       ),
-    [filtered, categories]
+    [breakdown, categories]
   );
   const byMonthWindow = useMemo(
     () => groupByMonthWindow(nonDateFiltered, chartMonth, MONTHLY_CHART_WINDOW),
     [nonDateFiltered, chartMonth]
   );
-  const byDay = useMemo(() => groupByDayInMonth(filtered, chartMonth), [filtered, chartMonth]);
-  const topExpenses = useMemo(() => getTopExpenses(filtered), [filtered]);
+  const byDay = useMemo(() => groupByDayInMonth(breakdown, chartMonth), [breakdown, chartMonth]);
+  const topExpenses = useMemo(() => getTopExpenses(breakdown), [breakdown]);
 
   const categoryMap = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
 
@@ -182,7 +172,9 @@ export const ReportsPage = () => {
 
   const navigateMonth = (delta: number) => {
     const nextMonth = shiftMonthKey(chartMonth, delta);
-    if (nextMonth < monthLimits.min || nextMonth > monthLimits.max) return;
+    if (nextMonth < monthLimits.min || nextMonth > monthLimits.max) {
+      return;
+    }
 
     const range = getMonthRange(nextMonth);
     setActivePreset("all");
@@ -200,13 +192,9 @@ export const ReportsPage = () => {
   };
 
   const resetFilters = () => {
-    const monthRange = getPeriodRange("month");
-    setActivePreset("month");
-    setFilters({
-      ...DEFAULT_FILTERS,
-      from: monthRange.from,
-      to: monthRange.to
-    });
+    const nextFilters = getDefaultPeriodFilters();
+    setActivePreset(inferPeriodPreset(nextFilters));
+    setFilters(nextFilters);
   };
 
   if (transactions.length === 0) {
@@ -220,18 +208,121 @@ export const ReportsPage = () => {
   }
 
   const scroogeVariant = summary.balance < 0 ? "cute" : summary.count === 0 ? "group" : "comics";
+  const monthLabel = formatMonthNavLabel(chartMonth).toLowerCase();
 
   return (
     <div className={styles.page}>
+      <details className={styles.filtersPanel}>
+        <summary className={styles.filtersSummary}>
+          <div>
+            <p className={styles.filtersSummaryTitle}>Фильтры</p>
+            <p className={styles.filtersSummaryHint}>Меняйте период и условия — результат обновится ниже</p>
+          </div>
+          <ChevronDown aria-hidden className={styles.filtersChevron} size={20} strokeWidth={2} />
+        </summary>
+
+        <div className={styles.filtersBody}>
+          <div className={styles.presets}>
+            {PRESETS.map((preset) => (
+              <Button
+                key={preset.id}
+                onClick={() => applyPreset(preset.id)}
+                size="sm"
+                type="button"
+                variant={activePreset === preset.id ? "primary" : "secondary"}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+
+          <Input
+            label="С"
+            onChange={(event) => {
+              setActivePreset("all");
+              setFilters((prev) => ({ ...prev, from: event.target.value || null }));
+            }}
+            type="date"
+            value={filters.from ?? ""}
+          />
+          <Input
+            label="По"
+            onChange={(event) => {
+              setActivePreset("all");
+              setFilters((prev) => ({ ...prev, to: event.target.value || null }));
+            }}
+            type="date"
+            value={filters.to ?? ""}
+          />
+
+          <Input
+            label="Поиск по заметке"
+            onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+            placeholder="Например: продукты"
+            value={filters.search}
+          />
+
+          <Input
+            inputMode="decimal"
+            label="Мин. сумма"
+            onChange={(event) =>
+              setFilters((prev) => ({
+                ...prev,
+                minAmount: event.target.value ? Number(event.target.value) : null
+              }))
+            }
+            type="number"
+            value={filters.minAmount ?? ""}
+          />
+
+          <Input
+            inputMode="decimal"
+            label="Макс. сумма"
+            onChange={(event) =>
+              setFilters((prev) => ({
+                ...prev,
+                maxAmount: event.target.value ? Number(event.target.value) : null
+              }))
+            }
+            type="number"
+            value={filters.maxAmount ?? ""}
+          />
+
+          <div className={styles.categoryChips}>
+            {categories.map((category) => (
+              <button
+                className={cn(styles.chip, filters.categoryIds.includes(category.id) && styles.chipActive)}
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                type="button"
+              >
+                {category.icon} {category.name}
+              </button>
+            ))}
+          </div>
+
+          <Button fullWidth onClick={resetFilters} type="button" variant="ghost">
+            Сбросить фильтры
+          </Button>
+        </div>
+      </details>
+
       <section className={styles.resultsSection} id="report-results">
         <div className={styles.resultsHero}>
           <div className={styles.resultsTop}>
             <div className={styles.resultsHeroText}>
               <h2 className={styles.resultsTitle}>Результат за период</h2>
               <p className={styles.resultsSubtitle}>
-                {getPeriodLabel(filters)} · {summary.count}{" "}
-                {summary.count === 1 ? "операция" : summary.count < 5 ? "операции" : "операций"}
+                {getPeriodLabel(filters)} · {formatRuCount(summary.count, ["операция", "операции", "операций"])}
               </p>
+              {summaryFiltersActive && (
+                <p className={styles.filtersActiveHint}>
+                  Сводка сужена фильтрами.{" "}
+                  <button className={styles.filtersActiveReset} onClick={resetFilters} type="button">
+                    Сбросить
+                  </button>
+                </p>
+              )}
             </div>
             <ScroogeArt animate={false} size="md" variant={scroogeVariant} />
           </div>
@@ -245,12 +336,15 @@ export const ReportsPage = () => {
           <Card className={styles.emptyFiltered} fullWidth gap="12">
             <ScroogeArt size="md" variant="group" />
             <p className={styles.emptyFilteredText}>
-              За {formatMonthNavLabel(chartMonth).toLowerCase()} ничего не найдено. Переключите месяц или ослабьте
-              фильтры.
+              {summaryFiltersActive
+                ? `За ${monthLabel} ничего не найдено. Ослабьте фильтры или переключите месяц.`
+                : `За ${monthLabel} нет операций. Переключите месяц или добавьте записи в журнал.`}
             </p>
-            <Button onClick={resetFilters} type="button" variant="secondary">
-              Сбросить фильтры
-            </Button>
+            {summaryFiltersActive && (
+              <Button onClick={resetFilters} type="button" variant="secondary">
+                Сбросить фильтры
+              </Button>
+            )}
           </Card>
         ) : (
           <div className={styles.summaryGrid}>
@@ -401,116 +495,6 @@ export const ReportsPage = () => {
           )}
         </div>
       </section>
-
-      <details className={styles.filtersPanel}>
-        <summary className={styles.filtersSummary}>
-          <div>
-            <p className={styles.filtersSummaryTitle}>Фильтры</p>
-            <p className={styles.filtersSummaryHint}>Меняйте период и условия — результат обновится выше</p>
-          </div>
-          <ChevronDown aria-hidden className={styles.filtersChevron} size={20} strokeWidth={2} />
-        </summary>
-
-        <div className={styles.filtersBody}>
-          <div className={styles.presets}>
-            {PRESETS.map((preset) => (
-              <Button
-                key={preset.id}
-                onClick={() => applyPreset(preset.id)}
-                size="sm"
-                type="button"
-                variant={activePreset === preset.id ? "primary" : "secondary"}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-
-          <Input
-            label="С"
-            onChange={(event) => {
-              setActivePreset("all");
-              setFilters((prev) => ({ ...prev, from: event.target.value || null }));
-            }}
-            type="date"
-            value={filters.from ?? ""}
-          />
-          <Input
-            label="По"
-            onChange={(event) => {
-              setActivePreset("all");
-              setFilters((prev) => ({ ...prev, to: event.target.value || null }));
-            }}
-            type="date"
-            value={filters.to ?? ""}
-          />
-
-          <Select
-            label="Тип"
-            onChange={(event) =>
-              setFilters((prev) => ({
-                ...prev,
-                type: event.target.value as ITransactionFilters["type"]
-              }))
-            }
-            value={filters.type}
-          >
-            <option value="all">Все</option>
-            <option value="income">Доходы</option>
-            <option value="expense">Расходы</option>
-          </Select>
-
-          <Input
-            label="Поиск по заметке"
-            onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
-            placeholder="Например: продукты"
-            value={filters.search}
-          />
-
-          <Input
-            inputMode="decimal"
-            label="Мин. сумма"
-            onChange={(event) =>
-              setFilters((prev) => ({
-                ...prev,
-                minAmount: event.target.value ? Number(event.target.value) : null
-              }))
-            }
-            type="number"
-            value={filters.minAmount ?? ""}
-          />
-
-          <Input
-            inputMode="decimal"
-            label="Макс. сумма"
-            onChange={(event) =>
-              setFilters((prev) => ({
-                ...prev,
-                maxAmount: event.target.value ? Number(event.target.value) : null
-              }))
-            }
-            type="number"
-            value={filters.maxAmount ?? ""}
-          />
-
-          <div className={styles.categoryChips}>
-            {categories.map((category) => (
-              <button
-                className={cn(styles.chip, filters.categoryIds.includes(category.id) && styles.chipActive)}
-                key={category.id}
-                onClick={() => toggleCategory(category.id)}
-                type="button"
-              >
-                {category.icon} {category.name}
-              </button>
-            ))}
-          </div>
-
-          <Button fullWidth onClick={resetFilters} type="button" variant="ghost">
-            Сбросить фильтры
-          </Button>
-        </div>
-      </details>
     </div>
   );
 };

@@ -1,14 +1,15 @@
 import { useRef, type ChangeEvent } from "react";
 
 import cn from "classnames";
-import { Download, Trash2, Upload } from "lucide-react";
+import { Download, Moon, Sun, Trash2, Upload } from "lucide-react";
 
-import { useToast } from "@/app/providers/toastProvider";
+import { useToast } from "@/app/providers/useToast";
 import { useData } from "@/app/providers/useData";
 import { useTheme } from "@/app/providers/useTheme";
 import { seedCategoriesIfEmpty } from "@/entities/category/api/categoryRepo";
 import { clearDatabase, exportDatabase, importDatabase, type IBackupPayload } from "@/shared/db";
-import { isThemePresetId, THEME_PRESETS } from "@/shared/lib/theme/presets";
+import { resolveThemeId, THEME_SETTING_KEY, THEMES } from "@/shared/lib/theme/presets";
+import type { TThemeId } from "@/shared/lib/theme/types";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
@@ -18,7 +19,7 @@ import styles from "./index.module.scss";
 export const SettingsPage = () => {
   const { refresh } = useData();
   const { showToast } = useToast();
-  const { themePreset, setThemePreset } = useTheme();
+  const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -47,10 +48,8 @@ export const SettingsPage = () => {
 
       await importDatabase(payload);
       await refresh();
-      const importedTheme = payload.settings?.find((setting) => setting.key === "themePreset")?.value;
-      if (isThemePresetId(importedTheme)) {
-        await setThemePreset(importedTheme);
-      }
+      const importedTheme = payload.settings?.find((setting) => setting.key === THEME_SETTING_KEY)?.value;
+      await setTheme(resolveThemeId(importedTheme));
       showToast("Данные успешно восстановлены", "success");
     } catch {
       showToast("Не удалось импортировать файл", "error");
@@ -65,43 +64,37 @@ export const SettingsPage = () => {
 
     await clearDatabase();
     await seedCategoriesIfEmpty();
-    await setThemePreset("vault");
+    await setTheme("dark");
     await refresh();
     showToast("Данные очищены", "info");
   };
 
-  const handleThemeChange = async (presetId: typeof themePreset) => {
-    if (presetId === themePreset) return;
-    await setThemePreset(presetId);
+  const handleThemeChange = async (themeId: TThemeId) => {
+    if (themeId === theme) return;
+    await setTheme(themeId);
   };
 
   return (
     <div className={styles.page}>
       <Card className={styles.section} fullWidth gap="12" padding="16">
-        <h2 className={styles.title}>Цветовая тема</h2>
-        <p className={styles.description}>
-          Выберите пресет оформления приложения. Настройка сохраняется на устройстве.
-        </p>
-        <div className={styles.themeGrid}>
-          {THEME_PRESETS.map((preset) => {
-            const isActive = themePreset === preset.id;
+        <h2 className={styles.title}>Оформление</h2>
+        <p className={styles.description}>Светлая или тёмная тема. Настройка сохраняется на устройстве.</p>
+        <div aria-label="Тема" className={styles.themeSwitch} role="radiogroup">
+          {THEMES.map((option) => {
+            const isActive = theme === option.id;
+            const Icon = option.id === "light" ? Sun : Moon;
 
             return (
               <button
-                className={cn(styles.themeOption, isActive && styles.themeOptionActive)}
-                key={preset.id}
-                onClick={() => void handleThemeChange(preset.id)}
+                aria-checked={isActive}
+                className={cn(styles.themeSegment, isActive && styles.themeSegmentActive)}
+                key={option.id}
+                onClick={() => void handleThemeChange(option.id)}
+                role="radio"
                 type="button"
               >
-                <span className={styles.themeSwatches}>
-                  {preset.swatch.map((color) => (
-                    <span className={styles.themeSwatch} key={color} style={{ backgroundColor: color }} />
-                  ))}
-                </span>
-                <span className={styles.themeMeta}>
-                  <span className={styles.themeLabel}>{preset.label}</span>
-                  <span className={styles.themeHint}>{preset.description}</span>
-                </span>
+                <Icon size={16} strokeWidth={2} />
+                {option.label}
               </button>
             );
           })}

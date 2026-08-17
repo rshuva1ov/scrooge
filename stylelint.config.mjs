@@ -36,13 +36,7 @@ export default {
     "custom-property-pattern": null,
     "no-descending-specificity": null,
     "alpha-value-notation": null,
-    "max-nesting-depth": [3, { ignoreAtRules: ["media"] }],
-    "scss/at-mixin-no-unknown": [
-      true,
-      {
-        ignoreMixins: ["flex", "font", "hide-scrollbar", "respond-from"]
-      }
-    ]
+    "max-nesting-depth": [3, { ignoreAtRules: ["media"] }]
   },
   ignoreFiles: ["dist/**", "node_modules/**", "src/app/styles/**"]
 };

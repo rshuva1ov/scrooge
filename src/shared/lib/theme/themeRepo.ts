@@ -1,29 +1,41 @@
 import { getDb } from "@/shared/db";
 
 import { applyTheme } from "./applyTheme";
-import { DEFAULT_THEME_PRESET, isThemePresetId, THEME_SETTING_KEY, THEME_STORAGE_KEY } from "./presets";
-import type { TThemePresetId } from "./types";
+import { resolveThemeId, THEME_SETTING_KEY, THEME_STORAGE_KEY } from "./presets";
+import type { TThemeId } from "./types";
 
-export const getThemePreset = async (): Promise<TThemePresetId> => {
-  const cached = localStorage.getItem(THEME_STORAGE_KEY);
-  if (isThemePresetId(cached)) {
-    return cached;
+const readThemeCache = (): string | null => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const writeThemeCache = (themeId: TThemeId): void => {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, themeId);
+  } catch {
+    // localStorage can be unavailable in private mode
+  }
+};
+
+export const getTheme = async (): Promise<TThemeId> => {
+  const cached = readThemeCache();
+  if (cached) {
+    return resolveThemeId(cached);
   }
 
   const db = await getDb();
   const setting = await db.get("settings", THEME_SETTING_KEY);
-
-  if (isThemePresetId(setting?.value)) {
-    localStorage.setItem(THEME_STORAGE_KEY, setting.value);
-    return setting.value;
-  }
-
-  return DEFAULT_THEME_PRESET;
+  const themeId = resolveThemeId(setting?.value);
+  writeThemeCache(themeId);
+  return themeId;
 };
 
-export const setThemePreset = async (presetId: TThemePresetId): Promise<void> => {
+export const setTheme = async (themeId: TThemeId): Promise<void> => {
   const db = await getDb();
-  await db.put("settings", { key: THEME_SETTING_KEY, value: presetId });
-  localStorage.setItem(THEME_STORAGE_KEY, presetId);
-  applyTheme(presetId);
+  await db.put("settings", { key: THEME_SETTING_KEY, value: themeId });
+  writeThemeCache(themeId);
+  applyTheme(themeId);
 };

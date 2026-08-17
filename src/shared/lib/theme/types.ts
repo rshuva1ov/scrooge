@@ -1,8 +1,6 @@
-export type TThemePresetId = "vault" | "midnight" | "copper" | "amethyst";
+export type TThemeId = "light" | "dark";
 
-export interface IThemePreset {
-  id: TThemePresetId;
+export interface IThemeOption {
+  id: TThemeId;
   label: string;
-  description: string;
-  swatch: [string, string, string];
 }

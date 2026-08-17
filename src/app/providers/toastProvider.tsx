@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { springSnappy } from "@/shared/lib/motion/presets";
 
+import { ToastContext } from "./useToast";
 import styles from "./toastProvider.module.scss";
 
 interface IToast {
@@ -10,12 +11,6 @@ interface IToast {
   message: string;
   tone?: "success" | "error" | "info";
 }
-
-interface IToastContextValue {
-  showToast: (message: string, tone?: IToast["tone"]) => void;
-}
-
-const ToastContext = createContext<IToastContextValue | null>(null);
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<IToast[]>([]);
@@ -53,12 +48,4 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
       </div>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = (): IToastContextValue => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within ToastProvider");
-  }
-  return context;
 };

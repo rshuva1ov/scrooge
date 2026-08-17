@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import type { TCategory } from "@/entities/category/model/types";
 import {
   calcSummary,
+  DEFAULT_FILTERS,
   filterTransactions,
   getTopExpenses,
   groupByCategory,
   groupByDay,
-  groupByMonth
+  groupByDayInMonth,
+  groupByMonth,
+  groupByMonthWindow,
+  sanitizeFilters,
+  withoutTypeFilter
 } from "@/entities/transaction/lib/reports";
 import type { TTransaction } from "@/entities/transaction/model/types";
 
@@ -43,6 +48,33 @@ const transactions: TTransaction[] = [
   }
 ];
 
+const julyTransactions: TTransaction[] = [
+  {
+    id: "inc-1",
+    amount: 10000,
+    type: "income",
+    categoryId: "salary",
+    note: "Рэм балует",
+    date: "2026-07-31"
+  },
+  {
+    id: "inc-2",
+    amount: 40000,
+    type: "income",
+    categoryId: "salary",
+    note: "Отчеты",
+    date: "2026-07-31T12:00:00.000Z"
+  },
+  {
+    id: "exp-1",
+    amount: 2200,
+    type: "expense",
+    categoryId: "food",
+    note: "Процедурки",
+    date: "2026-07-28"
+  }
+];
+
 describe("reports", () => {
   it("calculates summary", () => {
     expect(calcSummary(transactions)).toEqual({
@@ -66,6 +98,62 @@ describe("reports", () => {
 
     expect(filtered).toHaveLength(1);
     expect(filtered[0]?.id).toBe("2");
+  });
+
+  it("keeps July income in the period summary even if type filter is expense", () => {
+    const periodFilters = {
+      ...DEFAULT_FILTERS,
+      from: "2026-07-01",
+      to: "2026-07-31",
+      type: "expense" as const
+    };
+    const period = filterTransactions(julyTransactions, withoutTypeFilter(periodFilters));
+    const summary = calcSummary(period);
+
+    expect(summary).toEqual({
+      income: 50000,
+      expense: 2200,
+      balance: 47800,
+      count: 3
+    });
+  });
+
+  it("includes calendar and ISO dates in a month range", () => {
+    const filtered = filterTransactions(julyTransactions, {
+      ...DEFAULT_FILTERS,
+      from: "2026-07-01",
+      to: "2026-07-31"
+    });
+
+    expect(filtered.map((item) => item.id).sort()).toEqual(["exp-1", "inc-1", "inc-2"]);
+  });
+
+  it("groups July income on the monthly chart", () => {
+    const monthly = groupByMonthWindow(julyTransactions, "2026-07", 6);
+    const julyIndex = monthly.labels.indexOf("2026-07");
+
+    expect(julyIndex).toBeGreaterThanOrEqual(0);
+    expect(monthly.income[julyIndex]).toBe(50000);
+    expect(monthly.expense[julyIndex]).toBe(2200);
+
+    const daily = groupByDayInMonth(julyTransactions, "2026-07");
+    expect(daily.income.at(-1)).toBe(50000);
+  });
+
+  it("sanitizes broken stored filters back to all types", () => {
+    expect(
+      sanitizeFilters({
+        type: "Расходы",
+        categoryIds: "food",
+        from: "2026-07-01",
+        to: "2026-07-31"
+      })
+    ).toMatchObject({
+      type: "all",
+      categoryIds: [],
+      from: "2026-07-01",
+      to: "2026-07-31"
+    });
   });
 
   it("groups by category and month", () => {

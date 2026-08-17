@@ -1,13 +1,26 @@
-import { DEFAULT_THEME_PRESET, isThemePresetId, THEME_STORAGE_KEY } from "./presets";
-import type { TThemePresetId } from "./types";
+import { DEFAULT_THEME, resolveThemeId, THEME_STORAGE_KEY } from "./presets";
+import type { TThemeId } from "./types";
 
-export const applyTheme = (presetId: TThemePresetId): void => {
-  document.documentElement.dataset.theme = presetId;
+const THEME_COLOR: Record<TThemeId, string> = {
+  dark: "#141c2c",
+  light: "#f2f2f7"
 };
 
-export const readCachedTheme = (): TThemePresetId => {
-  const cached = localStorage.getItem(THEME_STORAGE_KEY);
-  return isThemePresetId(cached) ? cached : DEFAULT_THEME_PRESET;
+export const applyTheme = (themeId: TThemeId): void => {
+  const root = document.documentElement;
+  root.dataset.theme = themeId;
+  root.style.colorScheme = themeId;
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  meta?.setAttribute("content", THEME_COLOR[themeId]);
+};
+
+export const readCachedTheme = (): TThemeId => {
+  try {
+    return resolveThemeId(localStorage.getItem(THEME_STORAGE_KEY));
+  } catch {
+    return DEFAULT_THEME;
+  }
 };
 
 export const initTheme = (): void => {

@@ -35,6 +35,22 @@
   @include font(0.8125rem, 400, 1.125rem, var(--text-secondary));
 }
 
+.filtersActiveHint {
+  @include font(0.75rem, 500, 1rem, var(--text-secondary));
+  margin-top: 0.25rem;
+}
+
+.filtersActiveReset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gold);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.125rem;
+}
+
 .resultsBalance {
   @include flex(flex-start, flex-start, 0.125rem, column);
   width: 100%;
@@ -238,8 +254,4 @@
 .emptyFilteredText {
   @include font(0.875rem, 400, 1.25rem, var(--text-secondary));
   max-width: 16rem;
-}
-
-.duck {
-  flex-shrink: 0;
 }

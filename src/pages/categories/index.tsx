@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import cn from "classnames";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
-import { useToast } from "@/app/providers/toastProvider";
+import { useToast } from "@/app/providers/useToast";
 import { useData } from "@/app/providers/useData";
 import { deleteCategory, saveCategory } from "@/entities/category/api/categoryRepo";
 import type { TCategory, TCategoryType } from "@/entities/category/model/types";
@@ -14,6 +14,7 @@ import {
   type TCategoryFormValues
 } from "@/features/manage-category/model/schema";
 import { createId } from "@/shared/lib/createId";
+import { zodFieldErrors } from "@/shared/lib/zodFieldErrors";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/emptyState";
@@ -72,17 +73,11 @@ export const CategoriesPage = () => {
     const parsed = categorySchema.safeParse(form);
 
     if (!parsed.success) {
-      const fieldErrors: Partial<Record<keyof TCategoryFormValues, string>> = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0];
-        if (typeof key === "string") {
-          fieldErrors[key as keyof TCategoryFormValues] = issue.message;
-        }
-      }
-      setErrors(fieldErrors);
+      setErrors(zodFieldErrors<keyof TCategoryFormValues>(parsed.error));
       return;
     }
 
+    const isEdit = Boolean(editingId);
     setIsSubmitting(true);
 
     try {
@@ -92,7 +87,7 @@ export const CategoriesPage = () => {
       });
       await refresh();
       setIsOpen(false);
-      showToast(editingId ? "Категория обновлена" : "Категория создана", "success");
+      showToast(isEdit ? "Категория обновлена" : "Категория создана", "success");
     } finally {
       setIsSubmitting(false);
     }

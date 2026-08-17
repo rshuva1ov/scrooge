@@ -1,7 +1,7 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { Component, type ErrorInfo, type ReactNode, useEffect } from "react";
 
-import { useToast } from "@/app/providers/toastProvider";
+import { useToast } from "@/app/providers/useToast";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/emptyState";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";

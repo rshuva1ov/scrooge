@@ -2,17 +2,16 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import cn from "classnames";
-import { motion } from "framer-motion";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
-import { useToast } from "@/app/providers/toastProvider";
+import { useToast } from "@/app/providers/useToast";
 import { useData } from "@/app/providers/useData";
 import { transactionSchema, type TTransactionFormValues } from "@/features/add-transaction/model/schema";
 import type { TCategory } from "@/entities/category/model/types";
 import { deleteTransaction, saveTransaction } from "@/entities/transaction/api/transactionRepo";
 import type { TTransaction, TTransactionType } from "@/entities/transaction/model/types";
 import { formatDisplayDate, formatMonthLabel, getMonthKey, toInputDate } from "@/shared/lib/dates";
-import { listItemVariants, staggerContainer } from "@/shared/lib/motion/presets";
+import { zodFieldErrors } from "@/shared/lib/zodFieldErrors";
 import { Amount } from "@/shared/ui/amount";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -35,10 +34,19 @@ const getDefaultForm = (categories: TCategory[]): TTransactionFormValues => {
   };
 };
 
+const toFormValues = (transaction: TTransaction): TTransactionFormValues => ({
+  amount: transaction.amount,
+  type: transaction.type,
+  categoryId: transaction.categoryId,
+  note: transaction.note,
+  date: toInputDate(transaction.date)
+});
+
 export const LedgerPage = () => {
   const { categories, transactions, refresh } = useData();
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<TTransactionFormValues>(() => getDefaultForm(categories));
   const [errors, setErrors] = useState<Partial<Record<keyof TTransactionFormValues, string>>>({});
@@ -71,15 +79,33 @@ export const LedgerPage = () => {
     return groups;
   }, [transactions]);
 
-  const openForm = () => {
+  const openCreate = () => {
+    setEditingId(null);
     setForm(getDefaultForm(categories));
     setErrors({});
     setIsOpen(true);
   };
 
+  const openEdit = (transaction: TTransaction) => {
+    setEditingId(transaction.id);
+    setForm(toFormValues(transaction));
+    setErrors({});
+    setIsOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsOpen(false);
+    setEditingId(null);
+  };
+
   const handleTypeChange = (type: TTransactionType) => {
-    const nextCategory = categories.find((category) => category.type === type);
-    setForm((prev) => ({ ...prev, type, categoryId: nextCategory?.id ?? "" }));
+    setForm((prev) => {
+      const currentCategory = categories.find((category) => category.id === prev.categoryId);
+      const nextCategory =
+        currentCategory?.type === type ? currentCategory : categories.find((category) => category.type === type);
+
+      return { ...prev, type, categoryId: nextCategory?.id ?? "" };
+    });
   };
 
   const handleSubmit = async () => {
@@ -90,27 +116,25 @@ export const LedgerPage = () => {
     const parsed = transactionSchema.safeParse(form);
 
     if (!parsed.success) {
-      const fieldErrors: Partial<Record<keyof TTransactionFormValues, string>> = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0];
-        if (typeof key === "string") {
-          fieldErrors[key as keyof TTransactionFormValues] = issue.message;
-        }
-      }
-      setErrors(fieldErrors);
+      setErrors(zodFieldErrors<keyof TTransactionFormValues>(parsed.error));
       return;
     }
 
+    const isEdit = Boolean(editingId);
     setIsSubmitting(true);
 
     try {
       await saveTransaction({
         ...parsed.data,
-        date: new Date(parsed.data.date).toISOString()
+        id: editingId ?? undefined
       });
       await refresh();
-      setIsOpen(false);
-      showToast(parsed.data.type === "income" ? "Доход добавлен" : "Расход добавлен", "success");
+      closeForm();
+      if (isEdit) {
+        showToast("Операция обновлена", "success");
+      } else {
+        showToast(parsed.data.type === "income" ? "Доход добавлен" : "Расход добавлен", "success");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +151,7 @@ export const LedgerPage = () => {
       {transactions.length === 0 ? (
         <EmptyState
           action={
-            <Button onClick={openForm} type="button">
+            <Button onClick={openCreate} type="button">
               Добавить первую операцию
             </Button>
           }
@@ -138,7 +162,7 @@ export const LedgerPage = () => {
         </EmptyState>
       ) : (
         <Card fullWidth gap="12" padding="16">
-          <motion.div animate="animate" className={styles.groups} initial="initial" variants={staggerContainer}>
+          <div className={styles.groups}>
             {transactionsByMonth.map((group) => (
               <section className={styles.monthSection} key={group.key}>
                 <h2 className={styles.monthTitle}>{group.label}</h2>
@@ -147,7 +171,7 @@ export const LedgerPage = () => {
                     const category = categoryMap.get(transaction.categoryId);
 
                     return (
-                      <motion.li className={styles.item} key={transaction.id} variants={listItemVariants}>
+                      <li className={styles.item} key={transaction.id}>
                         <div className={styles.itemLeft}>
                           <span className={styles.icon}>{category?.icon ?? "📁"}</span>
                           <div className={styles.meta}>
@@ -158,27 +182,37 @@ export const LedgerPage = () => {
                         </div>
                         <div className={styles.itemRight}>
                           <Amount signed type={transaction.type} value={transaction.amount} />
-                          <Button
-                            aria-label="Удалить"
-                            onClick={() => void handleDelete(transaction.id)}
-                            size="sm"
-                            variant="ghost"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                          <div className={styles.actions}>
+                            <Button
+                              aria-label="Редактировать"
+                              onClick={() => openEdit(transaction)}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              <Pencil size={16} />
+                            </Button>
+                            <Button
+                              aria-label="Удалить"
+                              onClick={() => void handleDelete(transaction.id)}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
                         </div>
-                      </motion.li>
+                      </li>
                     );
                   })}
                 </ul>
               </section>
             ))}
-          </motion.div>
+          </div>
         </Card>
       )}
 
       {createPortal(
-        <button aria-label="Добавить операцию" className={styles.fab} onClick={openForm} type="button">
+        <button aria-label="Добавить операцию" className={styles.fab} onClick={openCreate} type="button">
           <Plus size={24} strokeWidth={2.5} />
         </button>,
         document.body
@@ -192,11 +226,11 @@ export const LedgerPage = () => {
         }
         onClose={() => {
           if (!isSubmitting) {
-            setIsOpen(false);
+            closeForm();
           }
         }}
         open={isOpen}
-        title="Новая операция"
+        title={editingId ? "Редактировать операцию" : "Новая операция"}
       >
         <div className={styles.form}>
           <div className={styles.typeToggle}>

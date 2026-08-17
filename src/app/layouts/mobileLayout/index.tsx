@@ -1,20 +1,28 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+
+import { motion } from "framer-motion";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import cn from "classnames";
 
 import { useData } from "@/app/providers/useData";
 import { ErrorBoundary } from "@/app/providers/errorBoundary";
-import { pageTransition, pageVariants, springSoft } from "@/shared/lib/motion/presets";
+import { pageTransition, springSoft } from "@/shared/lib/motion/presets";
 import { formatMoney } from "@/shared/lib/formatMoney";
+import { Amount } from "@/shared/ui/amount";
 import { BottomNav } from "@/shared/ui/bottomNav";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
 
 import styles from "./index.module.scss";
 
 export const MobileLayout = () => {
-  const { balance, isLoading } = useData();
+  const { balance, income, expense, isLoading } = useData();
+  const contentRef = useRef<HTMLElement>(null);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isDebt = balance < 0;
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [pathname]);
 
   return (
     <div className={styles.layout}>
@@ -37,26 +45,32 @@ export const MobileLayout = () => {
                 {formatMoney(Math.abs(balance))}
               </motion.p>
               {isDebt && <p className={styles.debtHint}>Баланс в минусе</p>}
+              <div className={styles.totals}>
+                <div className={styles.total}>
+                  <span className={styles.totalLabel}>Доход</span>
+                  <Amount signed={income > 0} size="sm" type="income" value={income} />
+                </div>
+                <div className={styles.total}>
+                  <span className={styles.totalLabel}>Расход</span>
+                  <Amount signed={expense > 0} size="sm" type="expense" value={expense} />
+                </div>
+              </div>
             </>
           )}
         </div>
       </header>
-      <main className={styles.content}>
-        <AnimatePresence initial={false} mode="wait">
+      <main className={styles.content} ref={contentRef}>
+        <ErrorBoundary>
           <motion.div
-            animate="animate"
+            animate={{ opacity: 1 }}
             className={styles.page}
-            exit="exit"
-            initial="initial"
+            initial={{ opacity: 0 }}
             key={pathname}
             transition={pageTransition}
-            variants={pageVariants}
           >
-            <ErrorBoundary>
-              <Outlet />
-            </ErrorBoundary>
+            <Outlet />
           </motion.div>
-        </AnimatePresence>
+        </ErrorBoundary>
       </main>
       <BottomNav />
     </div>
