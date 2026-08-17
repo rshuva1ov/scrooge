@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 import cn from "classnames";
 import { Download, Moon, Sun, Trash2, Upload } from "lucide-react";
@@ -12,6 +12,7 @@ import { resolveThemeId, THEME_SETTING_KEY, THEMES } from "@/shared/lib/theme/pr
 import type { TThemeId } from "@/shared/lib/theme/types";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { ConfirmSheet } from "@/shared/ui/confirmSheet";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
 
 import styles from "./index.module.scss";
@@ -21,6 +22,8 @@ export const SettingsPage = () => {
   const { showToast } = useToast();
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isClearOpen, setIsClearOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const handleExport = async () => {
     const payload = await exportDatabase();
@@ -59,14 +62,22 @@ export const SettingsPage = () => {
   };
 
   const handleClear = async () => {
-    const confirmed = window.confirm("Удалить все данные? Это действие нельзя отменить.");
-    if (!confirmed) return;
+    if (isClearing) {
+      return;
+    }
 
-    await clearDatabase();
-    await seedCategoriesIfEmpty();
-    await setTheme("dark");
-    await refresh();
-    showToast("Данные очищены", "info");
+    setIsClearing(true);
+
+    try {
+      await clearDatabase();
+      await seedCategoriesIfEmpty();
+      await setTheme("dark");
+      await refresh();
+      setIsClearOpen(false);
+      showToast("Данные очищены", "info");
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   const handleThemeChange = async (themeId: TThemeId) => {
@@ -127,7 +138,7 @@ export const SettingsPage = () => {
       <Card className={styles.section} fullWidth gap="12" padding="16">
         <h2 className={styles.title}>Опасная зона</h2>
         <p className={styles.description}>Удаляет все транзакции, категории и настройки с устройства.</p>
-        <Button fullWidth onClick={() => void handleClear()} type="button" variant="danger">
+        <Button fullWidth onClick={() => setIsClearOpen(true)} type="button" variant="danger">
           <Trash2 size={18} />
           Очистить все данные
         </Button>
@@ -137,8 +148,19 @@ export const SettingsPage = () => {
         <ScroogeArt size="md" variant="about" />
         <h2 className={styles.title}>Scrooge Vault</h2>
         <p className={styles.description}>Личный учёт денег. Все данные хранятся только на вашем устройстве.</p>
-        <span className={styles.version}>Валюта: ₽ · v0.1.0</span>
+        <span className={styles.version}>Валюта: ₽ · v1.0.0</span>
       </Card>
+
+      <ConfirmSheet
+        busyLabel="Очистка..."
+        confirmLabel="Очистить"
+        description="Все операции, категории и настройки будут удалены с устройства. Это нельзя отменить."
+        isBusy={isClearing}
+        onClose={() => setIsClearOpen(false)}
+        onConfirm={() => void handleClear()}
+        open={isClearOpen}
+        title="Очистить все данные?"
+      />
     </div>
   );
 };

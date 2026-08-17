@@ -17,6 +17,7 @@ import { createId } from "@/shared/lib/createId";
 import { zodFieldErrors } from "@/shared/lib/zodFieldErrors";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { ConfirmSheet } from "@/shared/ui/confirmSheet";
 import { EmptyState } from "@/shared/ui/emptyState";
 import { Input, Select } from "@/shared/ui/input";
 import { ModalSheet } from "@/shared/ui/modalSheet";
@@ -35,6 +36,8 @@ export const CategoriesPage = () => {
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<TCategory | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<TCategoryFormValues>(DEFAULT_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof TCategoryFormValues, string>>>({});
@@ -93,10 +96,21 @@ export const CategoriesPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteCategory(id);
-    await refresh();
-    showToast("Категория удалена", "info");
+  const handleDelete = async () => {
+    if (!pendingDelete || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteCategory(pendingDelete.id);
+      await refresh();
+      setPendingDelete(null);
+      showToast("Категория удалена", "info");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const renderGroup = (title: string, items: TCategory[], typeLabel: string) => (
@@ -124,7 +138,7 @@ export const CategoriesPage = () => {
                   </Button>
                   <Button
                     aria-label="Удалить"
-                    onClick={() => void handleDelete(category.id)}
+                    onClick={() => setPendingDelete(category)}
                     size="sm"
                     variant="ghost"
                   >
@@ -148,6 +162,19 @@ export const CategoriesPage = () => {
 
       {renderGroup("Доходы", grouped.income, "Доход")}
       {renderGroup("Расходы", grouped.expense, "Расход")}
+
+      <ConfirmSheet
+        description={
+          pendingDelete
+            ? `«${pendingDelete.name}» исчезнет из списка. Операции останутся, но без категории.`
+            : ""
+        }
+        isBusy={isDeleting}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+        open={Boolean(pendingDelete)}
+        title="Удалить категорию?"
+      />
 
       <ModalSheet
         footer={

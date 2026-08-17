@@ -12,10 +12,12 @@ import { deleteTransaction, saveTransaction } from "@/entities/transaction/api/t
 import { groupLedgerByMonth } from "@/entities/transaction/lib/groupLedgerByMonth";
 import type { TTransaction, TTransactionType } from "@/entities/transaction/model/types";
 import { formatDisplayDate, toInputDate } from "@/shared/lib/dates";
+import { formatMoney } from "@/shared/lib/formatMoney";
 import { zodFieldErrors } from "@/shared/lib/zodFieldErrors";
 import { Amount } from "@/shared/ui/amount";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { ConfirmSheet } from "@/shared/ui/confirmSheet";
 import { EmptyState } from "@/shared/ui/emptyState";
 import { Input, Select, Textarea } from "@/shared/ui/input";
 import { ModalSheet } from "@/shared/ui/modalSheet";
@@ -49,6 +51,8 @@ export const LedgerPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<TTransaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState<TTransactionFormValues>(() => getDefaultForm(categories));
   const [errors, setErrors] = useState<Partial<Record<keyof TTransactionFormValues, string>>>({});
 
@@ -122,10 +126,21 @@ export const LedgerPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteTransaction(id);
-    await refresh();
-    showToast("Операция удалена", "info");
+  const handleDelete = async () => {
+    if (!pendingDelete || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteTransaction(pendingDelete.id);
+      await refresh();
+      setPendingDelete(null);
+      showToast("Операция удалена", "info");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -175,7 +190,7 @@ export const LedgerPage = () => {
                             </Button>
                             <Button
                               aria-label="Удалить"
-                              onClick={() => void handleDelete(transaction.id)}
+                              onClick={() => setPendingDelete(transaction)}
                               size="sm"
                               variant="ghost"
                             >
@@ -199,6 +214,19 @@ export const LedgerPage = () => {
         </button>,
         document.body
       )}
+
+      <ConfirmSheet
+        description={
+          pendingDelete
+            ? `${categoryMap.get(pendingDelete.categoryId)?.name ?? "Без категории"} · ${formatMoney(pendingDelete.amount)}. Это нельзя отменить.`
+            : ""
+        }
+        isBusy={isDeleting}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => void handleDelete()}
+        open={Boolean(pendingDelete)}
+        title="Удалить операцию?"
+      />
 
       <ModalSheet
         footer={

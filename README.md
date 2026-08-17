@@ -1,17 +1,30 @@
 # Scrooge Vault
 
-Личный PWA для учёта доходов и расходов. Все данные хранятся локально на устройстве в IndexedDB.
+**v1.0.0** — личный PWA для учёта доходов и расходов. Все данные хранятся только на устройстве в IndexedDB, без сервера и аккаунта.
 
-## Стек
+Боевой сайт: [www.scroodge.company](https://www.scroodge.company)
 
-- React 19 + TypeScript
-- Vite
-- TanStack Router
-- SCSS Modules
-- IndexedDB (`idb`)
-- Recharts
-- ESLint + Prettier + Stylelint
-- vite-plugin-pwa
+## Возможности
+
+- **Журнал** — доходы и расходы, редактирование, удаление с подтверждением, группировка по месяцам
+- **Категории** — свои категории доходов и расходов
+- **Отчёты** — период, фильтры, сводка, графики, топ трат
+- **Настройки** — светлая и тёмная тема, экспорт и импорт JSON, очистка данных
+
+Валюта: ₽.
+
+## Установка на iPhone
+
+1. Откройте [www.scroodge.company](https://www.scroodge.company) в Safari.
+2. «Поделиться» → «На экран Домой».
+
+Локально то же самое работает через `pnpm preview` по HTTPS или в локальной сети.
+
+## Бэкап
+
+На экране «Настройки» экспортируйте JSON и храните файл отдельно. Импорт полностью заменяет данные на устройстве. Очистка тоже просит подтверждение.
+
+Данные привязаны к домену: на preview-стенде журнал будет пустым, боевой сейф не затрагивается.
 
 ## Запуск
 
@@ -22,8 +35,6 @@ pnpm dev
 
 Откройте `http://localhost:5173`.
 
-## Сборка
-
 ```bash
 pnpm build
 pnpm preview
@@ -31,26 +42,11 @@ pnpm preview
 
 ## Деплой на Vercel
 
-Три среды:
-
 | Среда | Когда | Команда |
 | --- | --- | --- |
 | **Local** | разработка на машине | `pnpm dev` |
 | **Preview** | ветка ≠ `main`, PR | push в Git или `pnpm deploy:preview` |
-| **Production** | боевой сайт | merge в `main` или `pnpm deploy:prod` |
-
-### Локальная разработка с переменными Vercel
-
-```bash
-pnpm dlx vercel link
-pnpm env:pull
-pnpm dev
-```
-
-`pnpm env:pull` создаёт `.env.local` из настроек проекта в Vercel Dashboard.  
-Для preview/production переменных: `pnpm env:pull:preview` или `pnpm env:pull:production`.
-
-Переменные для клиента в Vite должны начинаться с `VITE_` (см. `.env.example`).
+| **Production** | [www.scroodge.company](https://www.scroodge.company) | merge в `main` или `pnpm deploy:prod` |
 
 ## Качество кода
 
@@ -61,19 +57,6 @@ pnpm type-check
 pnpm test
 ```
 
-## Установка на iPhone
+## Стек
 
-1. Разместите приложение на HTTPS (или используйте `pnpm preview` в локальной сети).
-2. Откройте в Safari.
-3. «Поделиться» → «На экран Домой».
-
-## Экраны
-
-- **Журнал** — список операций, добавление и удаление
-- **Категории** — CRUD категорий доходов и расходов
-- **Отчёты** — фильтры, сводка, графики, топ трат
-- **Настройки** — экспорт/импорт JSON, очистка данных
-
-## Бэкап
-
-На экране «Настройки» можно экспортировать все данные в JSON и восстановить их позже.
+React 19, TypeScript, Vite, TanStack Router, SCSS Modules, IndexedDB (`idb`), Recharts, Framer Motion, vite-plugin-pwa.

@@ -1,0 +1,8 @@
+.actions {
+  @include flex(stretch, flex-start, 0.5rem);
+}
+
+.description {
+  @include font(0.9375rem, 400, 1.375rem, var(--text-secondary));
+  margin: 0;
+}
