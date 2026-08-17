@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 
 import cn from "classnames";
-import { Banknote, Download, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { Download, ExternalLink, Moon, Sun, Trash2, Upload } from "lucide-react";
 
 import { useData } from "@/app/providers/useData";
 import { useTheme } from "@/app/providers/useTheme";
@@ -218,14 +218,28 @@ export const SettingsPage = () => {
         </div>
       </ModalSheet>
 
-      <ModalSheet onClose={() => setIsDonateOpen(false)} open={isDonateOpen} title="Поддержать автора">
-        <div className={styles.donateBody}>
-          <Banknote size={22} strokeWidth={2} />
-          <p className={styles.description}>Отсканируйте QR или откройте страницу доната.</p>
-          <img alt="QR-код для поддержки автора" className={styles.donateQr} src="/assets/donate-qr.png" />
-          <Button fullWidth onClick={() => window.open(DONATE_URL, "_blank", "noopener,noreferrer")} type="button">
+      <ModalSheet
+        footer={
+          <Button
+            fullWidth
+            onClick={() => window.open(DONATE_URL, "_blank", "noopener,noreferrer")}
+            type="button"
+          >
+            <ExternalLink size={18} />
             Открыть страницу
           </Button>
+        }
+        onClose={() => setIsDonateOpen(false)}
+        open={isDonateOpen}
+        title="Поддержать автора"
+      >
+        <div className={styles.donateBody}>
+          <p className={styles.description}>
+            Сканируйте QR камерой телефона — или откройте страницу доната кнопкой ниже.
+          </p>
+          <div className={styles.donateQrWrap}>
+            <img alt="QR-код для поддержки автора" className={styles.donateQr} src="/assets/donate-qr.png" />
+          </div>
         </div>
       </ModalSheet>
 

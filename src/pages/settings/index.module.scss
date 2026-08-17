@@ -78,17 +78,23 @@
 }
 
 .donateBody {
-  @include flex(center, flex-start, 0.75rem, column);
-  color: var(--gold);
-  text-align: center;
+  @include flex(stretch, flex-start, 1rem, column);
+}
+
+.donateQrWrap {
+  @include flex(center, center);
+  align-self: center;
+  padding: 0.75rem;
+  border: 0.0625rem solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
 }
 
 .donateQr {
-  width: 9.5rem;
-  height: 9.5rem;
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-  background: #fff;
+  display: block;
+  width: 11rem;
+  height: 11rem;
   object-fit: contain;
 }
 
