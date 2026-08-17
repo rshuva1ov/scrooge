@@ -11,6 +11,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: ["./src/test/setup.ts"]
+    setupFiles: ["./src/test/setup.ts"],
+    env: {
+      VITE_SUPPORT_EMAIL: "shuvalov.rem@mail.ru",
+      VITE_DONATE_URL: "https://dalink.to/harekuintv"
+    }
   }
 });

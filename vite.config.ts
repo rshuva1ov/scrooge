@@ -13,7 +13,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "icons/icon-192.svg", "icons/icon-512.svg", "assets/scrooge/**/*"],
+      includeAssets: [
+        "favicon.svg",
+        "icons/icon-192.svg",
+        "icons/icon-512.svg",
+        "assets/scrooge/**/*",
+        "assets/donate-qr.png"
+      ],
       manifest: {
         name: "Scrooge Vault",
         short_name: "Scrooge",

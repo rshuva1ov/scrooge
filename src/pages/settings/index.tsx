@@ -1,18 +1,21 @@
 import { useRef, useState, type ChangeEvent } from "react";
 
 import cn from "classnames";
-import { Download, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { Banknote, Download, Moon, Sun, Trash2, Upload } from "lucide-react";
 
-import { useToast } from "@/app/providers/useToast";
 import { useData } from "@/app/providers/useData";
 import { useTheme } from "@/app/providers/useTheme";
+import { useToast } from "@/app/providers/useToast";
 import { seedCategoriesIfEmpty } from "@/entities/category/api/categoryRepo";
+import { buildSupportMailto, DONATE_URL, SUPPORT_EMAIL } from "@/shared/config/env";
 import { clearDatabase, exportDatabase, importDatabase, type IBackupPayload } from "@/shared/db";
 import { resolveThemeId, THEME_SETTING_KEY, THEMES } from "@/shared/lib/theme/presets";
 import type { TThemeId } from "@/shared/lib/theme/types";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { ConfirmSheet } from "@/shared/ui/confirmSheet";
+import { Textarea } from "@/shared/ui/input";
+import { ModalSheet } from "@/shared/ui/modalSheet";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
 
 import styles from "./index.module.scss";
@@ -24,6 +27,10 @@ export const SettingsPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isClearOpen, setIsClearOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isDonateOpen, setIsDonateOpen] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [questionError, setQuestionError] = useState("");
 
   const handleExport = async () => {
     const payload = await exportDatabase();
@@ -85,6 +92,24 @@ export const SettingsPage = () => {
     await setTheme(themeId);
   };
 
+  const closeSupport = () => {
+    setIsSupportOpen(false);
+    setQuestion("");
+    setQuestionError("");
+  };
+
+  const handleSendQuestion = () => {
+    const text = question.trim();
+    if (!text) {
+      setQuestionError("Напишите вопрос");
+      return;
+    }
+
+    window.location.href = buildSupportMailto(text);
+    closeSupport();
+    showToast("Откроется почтовое приложение", "info");
+  };
+
   return (
     <div className={styles.page}>
       <Card className={styles.section} fullWidth gap="12" padding="16">
@@ -115,8 +140,8 @@ export const SettingsPage = () => {
       <Card className={styles.section} fullWidth gap="12" padding="16">
         <h2 className={styles.title}>Резервная копия</h2>
         <p className={styles.description}>
-          Экспортируйте данные в JSON и храните файл отдельно. На iPhone данные сохраняются локально, пока вы не удалите
-          приложение.
+          Экспортируйте данные в JSON и храните файл отдельно. На телефоне данные сохраняются локально, пока вы не
+          удалите приложение.
         </p>
         <Button fullWidth onClick={() => void handleExport()} type="button">
           <Download size={18} />
@@ -135,7 +160,28 @@ export const SettingsPage = () => {
         />
       </Card>
 
-      <Card className={styles.section} fullWidth gap="12" padding="16">
+      <Card className={styles.about} fullWidth gap="8" padding="16">
+        <ScroogeArt size="md" variant="about" />
+        <h2 className={styles.title}>Scrooge Vault</h2>
+        <p className={styles.description}>Личный учёт денег. Все данные хранятся только на вашем устройстве.</p>
+        <span className={styles.version}>Валюта: ₽ · v1.0.0</span>
+        {(SUPPORT_EMAIL || DONATE_URL) && (
+          <div className={styles.aboutLinks}>
+            {SUPPORT_EMAIL ? (
+              <button className={styles.aboutLink} onClick={() => setIsSupportOpen(true)} type="button">
+                Поддержка
+              </button>
+            ) : null}
+            {DONATE_URL ? (
+              <button className={styles.aboutLink} onClick={() => setIsDonateOpen(true)} type="button">
+                Поддержать автора
+              </button>
+            ) : null}
+          </div>
+        )}
+      </Card>
+
+      <Card className={cn(styles.section, styles.dangerZone)} fullWidth gap="12" padding="16">
         <h2 className={styles.title}>Опасная зона</h2>
         <p className={styles.description}>Удаляет все транзакции, категории и настройки с устройства.</p>
         <Button fullWidth onClick={() => setIsClearOpen(true)} type="button" variant="danger">
@@ -144,12 +190,44 @@ export const SettingsPage = () => {
         </Button>
       </Card>
 
-      <Card className={styles.about} fullWidth gap="8" padding="16">
-        <ScroogeArt size="md" variant="about" />
-        <h2 className={styles.title}>Scrooge Vault</h2>
-        <p className={styles.description}>Личный учёт денег. Все данные хранятся только на вашем устройстве.</p>
-        <span className={styles.version}>Валюта: ₽ · v1.0.0</span>
-      </Card>
+      <ModalSheet
+        footer={
+          <Button fullWidth onClick={handleSendQuestion} type="button">
+            Отправить
+          </Button>
+        }
+        onClose={closeSupport}
+        open={isSupportOpen}
+        title="Напишите нам"
+      >
+        <div className={styles.supportForm}>
+          <p className={styles.description}>Опишите вопрос — мы ответим вам в кротчайшие сроки.</p>
+          <Textarea
+            error={questionError}
+            label="Ваш вопрос"
+            onChange={(event) => {
+              setQuestion(event.target.value);
+              if (questionError) {
+                setQuestionError("");
+              }
+            }}
+            placeholder="Что не получается или что хотите уточнить?"
+            rows={5}
+            value={question}
+          />
+        </div>
+      </ModalSheet>
+
+      <ModalSheet onClose={() => setIsDonateOpen(false)} open={isDonateOpen} title="Поддержать автора">
+        <div className={styles.donateBody}>
+          <Banknote size={22} strokeWidth={2} />
+          <p className={styles.description}>Отсканируйте QR или откройте страницу доната.</p>
+          <img alt="QR-код для поддержки автора" className={styles.donateQr} src="/assets/donate-qr.png" />
+          <Button fullWidth onClick={() => window.open(DONATE_URL, "_blank", "noopener,noreferrer")} type="button">
+            Открыть страницу
+          </Button>
+        </div>
+      </ModalSheet>
 
       <ConfirmSheet
         busyLabel="Очистка..."
