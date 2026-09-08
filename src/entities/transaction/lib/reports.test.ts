@@ -2,19 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import type { TCategory } from "@/entities/category/model/types";
 import {
+  applyReportPeriod,
   calcSummary,
   DEFAULT_FILTERS,
   filterTransactions,
   getDefaultPeriodFilters,
   getTopExpenses,
+  getTopTransactions,
   groupByCategory,
   groupByDay,
   groupByDayInMonth,
   groupByMonth,
   groupByMonthWindow,
   hasSummaryFilters,
-  sanitizeFilters,
-  withoutTypeFilter
+  inferReportPeriod,
+  sanitizeFilters
 } from "@/entities/transaction/lib/reports";
 import type { TTransaction } from "@/entities/transaction/model/types";
 
@@ -87,36 +89,31 @@ describe("reports", () => {
     });
   });
 
-  it("filters by type and search", () => {
+  it("filters by type", () => {
     const filtered = filterTransactions(transactions, {
       from: null,
       to: null,
       type: "expense",
-      categoryIds: [],
-      minAmount: 1000,
-      maxAmount: null,
-      search: "Groceries"
+      categoryIds: []
     });
 
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0]?.id).toBe("2");
+    expect(filtered.map((item) => item.id)).toEqual(["2", "3"]);
   });
 
-  it("keeps July income in the period summary even if type filter is expense", () => {
-    const periodFilters = {
+  it("limits the period summary to the selected type", () => {
+    const period = filterTransactions(julyTransactions, {
       ...DEFAULT_FILTERS,
       from: "2026-07-01",
       to: "2026-07-31",
-      type: "expense" as const
-    };
-    const period = filterTransactions(julyTransactions, withoutTypeFilter(periodFilters));
+      type: "expense"
+    });
     const summary = calcSummary(period);
 
     expect(summary).toEqual({
-      income: 50000,
+      income: 0,
       expense: 2200,
-      balance: 47800,
-      count: 3
+      balance: -2200,
+      count: 1
     });
   });
 
@@ -194,19 +191,48 @@ describe("reports", () => {
     expect(calcSummary([])).toEqual({ income: 0, expense: 0, balance: 0, count: 0 });
   });
 
-  it("treats only extra conditions as summary filters", () => {
+  it("treats type and categories as extra summary filters", () => {
     expect(hasSummaryFilters({ ...DEFAULT_FILTERS, from: "2026-08-01", to: "2026-08-31" })).toBe(false);
-    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, search: "кофе" })).toBe(true);
+    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, type: "expense" })).toBe(true);
     expect(hasSummaryFilters({ ...DEFAULT_FILTERS, categoryIds: ["food"] })).toBe(true);
-    expect(hasSummaryFilters({ ...DEFAULT_FILTERS, minAmount: 100 })).toBe(true);
   });
 
-  it("defaults the report period to the current month", () => {
+  it("defaults the report period to the current calendar month", () => {
     const filters = getDefaultPeriodFilters();
     expect(filters.type).toBe("all");
     expect(filters.from).toMatch(/^\d{4}-\d{2}-01$/);
     expect(filters.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(filters.search).toBe("");
+    expect(filters.from?.slice(0, 7)).toBe(filters.to?.slice(0, 7));
+    expect(filters.categoryIds).toEqual([]);
+  });
+
+  it("snaps a mid-month range to the full calendar month", () => {
+    expect(
+      sanitizeFilters({
+        from: "2026-07-01",
+        to: "2026-07-17",
+        type: "expense",
+        search: "кофе",
+        minAmount: 100
+      })
+    ).toEqual({
+      from: "2026-07-01",
+      to: "2026-07-31",
+      type: "expense",
+      categoryIds: []
+    });
+  });
+
+  it("infers month, year and all report periods", () => {
+    expect(inferReportPeriod({ from: null, to: null })).toBe("all");
+    expect(inferReportPeriod({ from: "2026-07-01", to: "2026-07-31" })).toBe("month");
+    expect(applyReportPeriod("month", "2026-07")).toEqual({ from: "2026-07-01", to: "2026-07-31" });
+    expect(applyReportPeriod("all", "2026-07")).toEqual({ from: null, to: null });
+  });
+
+  it("returns top income and expense operations", () => {
+    expect(getTopTransactions(transactions, "income").map((item) => item.id)).toEqual(["1"]);
+    expect(getTopExpenses(transactions, 2).map((item) => item.id)).toEqual(["2", "3"]);
   });
 
   it("sanitizes a completely invalid payload", () => {

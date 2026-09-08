@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 
-import { motion } from "framer-motion";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import cn from "classnames";
+import { motion } from "framer-motion";
 
-import { useData } from "@/app/providers/useData";
 import { ErrorBoundary } from "@/app/providers/errorBoundary";
-import { pageTransition, springSoft } from "@/shared/lib/motion/presets";
+import { useData } from "@/app/providers/useData";
 import { formatMoney } from "@/shared/lib/formatMoney";
+import { pageTransition, springSoft } from "@/shared/lib/motion/presets";
 import { Amount } from "@/shared/ui/amount";
 import { BottomNav } from "@/shared/ui/bottomNav";
 import { ScroogeArt } from "@/shared/ui/scroogeArt";
@@ -19,6 +19,7 @@ export const MobileLayout = () => {
   const contentRef = useRef<HTMLElement>(null);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isDebt = balance < 0;
+  const hideHeader = pathname === "/reports";
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0 });
@@ -26,39 +27,41 @@ export const MobileLayout = () => {
 
   return (
     <div className={styles.layout}>
-      <header className={styles.header}>
-        <ScroogeArt animate={false} className={styles.headerArt} size="sm" variant={isDebt ? "cute" : "classic"} />
-        <div className={styles.headerMain}>
-          <p className={styles.title}>Scrooge Vault</p>
-          {isLoading ? (
-            <p className={styles.balance}>...</p>
-          ) : (
-            <>
-              <motion.p
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn(styles.balance, isDebt && styles.balanceDebt)}
-                initial={{ opacity: 0.6, scale: 0.98 }}
-                key={balance}
-                transition={springSoft}
-              >
-                {isDebt ? "−" : ""}
-                {formatMoney(Math.abs(balance))}
-              </motion.p>
-              {isDebt && <p className={styles.debtHint}>Баланс в минусе</p>}
-              <div className={styles.totals}>
-                <div className={styles.total}>
-                  <span className={styles.totalLabel}>Доход</span>
-                  <Amount signed={income > 0} size="sm" type="income" value={income} />
+      {!hideHeader && (
+        <header className={styles.header}>
+          <ScroogeArt animate={false} className={styles.headerArt} size="sm" variant={isDebt ? "cute" : "classic"} />
+          <div className={styles.headerMain}>
+            <p className={styles.title}>Scrooge Vault</p>
+            {isLoading ? (
+              <p className={styles.balance}>...</p>
+            ) : (
+              <>
+                <motion.p
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={cn(styles.balance, isDebt && styles.balanceDebt)}
+                  initial={{ opacity: 0.6, scale: 0.98 }}
+                  key={balance}
+                  transition={springSoft}
+                >
+                  {isDebt ? "−" : ""}
+                  {formatMoney(Math.abs(balance))}
+                </motion.p>
+                {isDebt && <p className={styles.debtHint}>Баланс в минусе</p>}
+                <div className={styles.totals}>
+                  <div className={styles.total}>
+                    <span className={styles.totalLabel}>Доход</span>
+                    <Amount signed={income > 0} size="sm" type="income" value={income} />
+                  </div>
+                  <div className={styles.total}>
+                    <span className={styles.totalLabel}>Расход</span>
+                    <Amount signed={expense > 0} size="sm" type="expense" value={expense} />
+                  </div>
                 </div>
-                <div className={styles.total}>
-                  <span className={styles.totalLabel}>Расход</span>
-                  <Amount signed={expense > 0} size="sm" type="expense" value={expense} />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </header>
+              </>
+            )}
+          </div>
+        </header>
+      )}
       <main className={styles.content} ref={contentRef}>
         <ErrorBoundary>
           <motion.div
