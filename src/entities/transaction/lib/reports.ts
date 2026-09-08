@@ -1,62 +1,82 @@
-import { dayjs, getMonthKey, getPeriodRange, toInputDate } from "@/shared/lib/dates";
-
 import type { TCategory } from "@/entities/category/model/types";
 import type { TTransaction, TTransactionType } from "@/entities/transaction/model/types";
+import { dayjs, getMonthKey, getMonthRange, getPeriodRange, toInputDate } from "@/shared/lib/dates";
 
 export interface ITransactionFilters {
   from: string | null;
   to: string | null;
   type: TTransactionType | "all";
   categoryIds: string[];
-  minAmount: number | null;
-  maxAmount: number | null;
-  search: string;
 }
+
+export type TReportPeriod = "month" | "year" | "all";
 
 export const DEFAULT_FILTERS: ITransactionFilters = {
   from: null,
   to: null,
   type: "all",
-  categoryIds: [],
-  minAmount: null,
-  maxAmount: null,
-  search: ""
+  categoryIds: []
 };
 
 const isFilterType = (value: unknown): value is ITransactionFilters["type"] =>
   value === "all" || value === "income" || value === "expense";
 
+export const inferReportPeriod = (filters: Pick<ITransactionFilters, "from" | "to">): TReportPeriod => {
+  if (!filters.from && !filters.to) {
+    return "all";
+  }
+
+  const yearRange = getPeriodRange("year");
+  if (filters.from === yearRange.from && filters.to === yearRange.to) {
+    return "year";
+  }
+
+  return "month";
+};
+
+export const applyReportPeriod = (
+  period: TReportPeriod,
+  monthKey: string
+): Pick<ITransactionFilters, "from" | "to"> => {
+  if (period === "all") {
+    return { from: null, to: null };
+  }
+
+  if (period === "year") {
+    return getPeriodRange("year");
+  }
+
+  return getMonthRange(monthKey);
+};
+
+const snapToReportPeriod = (filters: ITransactionFilters): ITransactionFilters => {
+  if (inferReportPeriod(filters) !== "month" || !filters.from) {
+    return filters;
+  }
+
+  return { ...filters, ...getMonthRange(getMonthKey(filters.from)) };
+};
+
 export const sanitizeFilters = (raw: unknown): ITransactionFilters => {
   const parsed = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
-  return {
+  return snapToReportPeriod({
     from: typeof parsed.from === "string" && parsed.from ? parsed.from : null,
     to: typeof parsed.to === "string" && parsed.to ? parsed.to : null,
     type: isFilterType(parsed.type) ? parsed.type : "all",
     categoryIds: Array.isArray(parsed.categoryIds)
       ? parsed.categoryIds.filter((id): id is string => typeof id === "string" && id.length > 0)
-      : [],
-    minAmount: typeof parsed.minAmount === "number" && Number.isFinite(parsed.minAmount) ? parsed.minAmount : null,
-    maxAmount: typeof parsed.maxAmount === "number" && Number.isFinite(parsed.maxAmount) ? parsed.maxAmount : null,
-    search: typeof parsed.search === "string" ? parsed.search : ""
-  };
+      : []
+  });
 };
 
 export const getDefaultPeriodFilters = (): ITransactionFilters => {
-  const monthRange = getPeriodRange("month");
+  const monthRange = getMonthRange(getMonthKey(new Date()));
   return { ...DEFAULT_FILTERS, from: monthRange.from, to: monthRange.to };
 };
 
-export const withoutTypeFilter = (filters: ITransactionFilters): ITransactionFilters => ({
-  ...filters,
-  type: "all"
-});
-
 export const hasSummaryFilters = (filters: ITransactionFilters): boolean =>
-  filters.categoryIds.length > 0 ||
-  Boolean(filters.search.trim()) ||
-  filters.minAmount !== null ||
-  filters.maxAmount !== null;
+  filters.type !== "all" || filters.categoryIds.length > 0;
 
 export interface ISummary {
   income: number;
@@ -112,10 +132,7 @@ const toMonthlyData = (labels: string[], buckets: Map<string, IAmountBucket>): I
   })
 });
 
-export const filterTransactions = (
-  transactions: TTransaction[],
-  filters: ITransactionFilters
-): TTransaction[] => {
+export const filterTransactions = (transactions: TTransaction[], filters: ITransactionFilters): TTransaction[] => {
   return transactions.filter((transaction) => {
     const dateKey = toInputDate(transaction.date);
 
@@ -129,15 +146,6 @@ export const filterTransactions = (
       return false;
     }
     if (filters.categoryIds.length > 0 && !filters.categoryIds.includes(transaction.categoryId)) {
-      return false;
-    }
-    if (filters.minAmount !== null && transaction.amount < filters.minAmount) {
-      return false;
-    }
-    if (filters.maxAmount !== null && transaction.amount > filters.maxAmount) {
-      return false;
-    }
-    if (filters.search && !(transaction.note ?? "").toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
     }
 
@@ -165,10 +173,7 @@ export const calcSummary = (transactions: TTransaction[]): ISummary => {
   };
 };
 
-export const groupByCategory = (
-  transactions: TTransaction[],
-  categories: TCategory[]
-): ICategoryTotal[] => {
+export const groupByCategory = (transactions: TTransaction[], categories: TCategory[]): ICategoryTotal[] => {
   const map = new Map<string, ICategoryTotal>();
 
   for (const category of categories) {
@@ -237,11 +242,7 @@ export const groupByDayInMonth = (transactions: TTransaction[], monthKey: string
   return toDailyData(Array.from(buckets.keys()).sort(), buckets);
 };
 
-export const groupByMonthWindow = (
-  transactions: TTransaction[],
-  endMonthKey: string,
-  count: number
-): IMonthlyData => {
+export const groupByMonthWindow = (transactions: TTransaction[], endMonthKey: string, count: number): IMonthlyData => {
   const end = dayjs(`${endMonthKey}-01`);
   const labels = Array.from({ length: count }, (_, index) =>
     end.subtract(count - 1 - index, "month").format("YYYY-MM")
@@ -257,11 +258,14 @@ export const groupByMonthWindow = (
   return toMonthlyData(labels, buckets);
 };
 
-export const getTopExpenses = (transactions: TTransaction[], limit = 5): TTransaction[] => {
+export const getTopTransactions = (transactions: TTransaction[], type: TTransactionType, limit = 5): TTransaction[] => {
   return transactions
-    .filter((transaction) => transaction.type === "expense")
+    .filter((transaction) => transaction.type === type)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, limit);
 };
+
+export const getTopExpenses = (transactions: TTransaction[], limit = 5): TTransaction[] =>
+  getTopTransactions(transactions, "expense", limit);
 
 export const FILTERS_STORAGE_KEY = "scrooge-report-filters";
